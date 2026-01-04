@@ -20,6 +20,8 @@ swaps in translations at render time.
 
 ## Installation
 
+Activation is blocked unless H5P, WPML, and WPML String Translation are active.
+
 ### Production
 
 1. Place this plugin in `/wp-content/plugins/h5p-wpml-translator/`.

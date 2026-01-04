@@ -64,7 +64,7 @@ if ( class_exists( '\\YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory' ) ) {
  */
 function activate_h5p_wpml_translator() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-h5p-wpml-translator-activator.php';
-	H5p_Wpml_Translator_Activator::activate();
+	H5p_Wpml_Translator_Activator::activate( plugin_basename( __FILE__ ) );
 }
 
 /**

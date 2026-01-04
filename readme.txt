@@ -33,6 +33,9 @@ Update notes:
 
 == Installation ==
 
+Activation will be blocked unless H5P, WPML, and WPML String Translation are
+installed and active.
+
 1. Install and activate the H5P plugin.
 2. Install and activate WPML and WPML String Translation.
 3. Upload this plugin to `/wp-content/plugins/` and activate it.
