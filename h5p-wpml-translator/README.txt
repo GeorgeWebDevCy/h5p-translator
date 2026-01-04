@@ -14,6 +14,11 @@ Here is a short description of the plugin.  This should be no more than 150 char
 
 This is the long description.  No limit, and you can use Markdown (as well as in the following sections).
 
+This plugin includes a GitHub-based updater via plugin-update-checker. It uses the
+repository at https://github.com/GeorgeWebDevCy/h5p-translator and expects the
+default branch to be `main`. The Composer autoloader is required at runtime, so
+ensure the `vendor/` directory is present on the installed plugin.
+
 For backwards compatibility, if this section is missing, the full length of the short description will be used, and
 Markdown parsed.
 

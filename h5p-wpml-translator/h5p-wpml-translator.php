@@ -38,6 +38,27 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'H5P_WPML_TRANSLATOR_VERSION', '1.0.0' );
 
 /**
+ * Composer autoloader.
+ */
+$h5p_wpml_translator_autoload = plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+if ( file_exists( $h5p_wpml_translator_autoload ) ) {
+	require_once $h5p_wpml_translator_autoload;
+}
+
+/**
+ * Set up plugin update checker.
+ */
+if ( class_exists( '\\YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory' ) ) {
+	$h5p_wpml_translator_update_checker =
+		\YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+			'https://github.com/GeorgeWebDevCy/h5p-translator',
+			__FILE__,
+			'h5p-wpml-translator'
+		);
+	$h5p_wpml_translator_update_checker->setBranch( 'main' );
+}
+
+/**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-h5p-wpml-translator-activator.php
  */
