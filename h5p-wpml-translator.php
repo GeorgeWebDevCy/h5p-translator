@@ -17,7 +17,7 @@
  * Plugin URI:        https://www.georgenicolaou.me/h5p-wpml-translator
  * Description:       Make H5P content translatable with WPML String Translation.
  * Version:           1.0.0
- * Author:            Georg
+ * Author:            George Nicolaou
  * Author URI:        https://www.georgenicolaou.me
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
@@ -36,6 +36,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Rename this for your plugin and update it as you release new versions.
  */
 define( 'H5P_WPML_TRANSLATOR_VERSION', '1.0.0' );
+define( 'H5P_WPML_TRANSLATOR_PLUGIN_FILE', __FILE__ );
 
 /**
  * Composer autoloader.

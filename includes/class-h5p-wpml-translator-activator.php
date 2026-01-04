@@ -29,24 +29,7 @@ class H5p_Wpml_Translator_Activator {
 	 * @param string $plugin_basename Plugin basename for deactivation.
 	 */
 	public static function activate( $plugin_basename ) {
-		if ( ! function_exists( 'is_plugin_active' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-
-		$missing = array();
-
-		if ( ! self::is_plugin_active_by_file( 'h5p/h5p.php' ) ) {
-			$missing[] = 'H5P';
-		}
-
-		if ( ! self::is_plugin_active_by_file( 'sitepress-multilingual-cms/sitepress.php' ) ) {
-			$missing[] = 'WPML';
-		}
-
-		if ( ! self::is_plugin_active_by_file( 'wpml-string-translation/plugin.php' ) ) {
-			$missing[] = 'WPML String Translation';
-		}
-
+		$missing = self::get_missing_plugins();
 		if ( empty( $missing ) ) {
 			return;
 		}
@@ -67,6 +50,35 @@ class H5p_Wpml_Translator_Activator {
 	 * @param string $plugin_file Plugin path relative to plugins directory.
 	 * @return bool
 	 */
+	public static function get_missing_plugins() {
+		self::ensure_plugin_api();
+
+		$missing = array();
+
+		if ( ! self::is_plugin_active_by_file( 'h5p/h5p.php' ) ) {
+			$missing[] = 'H5P';
+		}
+
+		if ( ! self::is_plugin_active_by_file( 'sitepress-multilingual-cms/sitepress.php' ) ) {
+			$missing[] = 'WPML';
+		}
+
+		if ( ! self::is_plugin_active_by_file( 'wpml-string-translation/plugin.php' ) ) {
+			$missing[] = 'WPML String Translation';
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * Ensure plugin API functions are available.
+	 */
+	private static function ensure_plugin_api() {
+		if ( ! function_exists( 'is_plugin_active' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+	}
+
 	private static function is_plugin_active_by_file( $plugin_file ) {
 		if ( is_plugin_active( $plugin_file ) ) {
 			return true;

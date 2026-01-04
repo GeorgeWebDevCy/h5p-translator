@@ -41,6 +41,13 @@ class H5p_Wpml_Translator_Admin {
 	private $version;
 
 	/**
+	 * Missing dependency names for admin notice.
+	 *
+	 * @var array
+	 */
+	private $missing_dependencies = array();
+
+	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -55,49 +62,50 @@ class H5p_Wpml_Translator_Admin {
 	}
 
 	/**
-	 * Register the stylesheets for the admin area.
+	 * Check required plugins and show an admin notice if missing.
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
+	public function check_dependencies() {
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in H5p_Wpml_Translator_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The H5p_Wpml_Translator_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-h5p-wpml-translator-activator.php';
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/h5p-wpml-translator-admin.css', array(), $this->version, 'all' );
+		$missing = H5p_Wpml_Translator_Activator::get_missing_plugins();
+		if ( empty( $missing ) ) {
+			return;
+		}
 
+		$this->missing_dependencies = $missing;
+
+		if ( defined( 'H5P_WPML_TRANSLATOR_PLUGIN_FILE' ) ) {
+			$plugin = plugin_basename( H5P_WPML_TRANSLATOR_PLUGIN_FILE );
+			$network_wide = is_multisite() && is_network_admin();
+			deactivate_plugins( $plugin, true, $network_wide );
+		}
+
+		if ( isset( $_GET['activate'] ) ) {
+			unset( $_GET['activate'] );
+		}
 	}
 
 	/**
-	 * Register the JavaScript for the admin area.
+	 * Render dependency notice after a failed activation attempt.
 	 *
-	 * @since    1.0.0
+	 * @since 1.0.0
 	 */
-	public function enqueue_scripts() {
+	public function render_dependency_notice() {
+		if ( empty( $this->missing_dependencies ) ) {
+			return;
+		}
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in H5p_Wpml_Translator_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The H5p_Wpml_Translator_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+		$message  = '<p><strong>H5P WPML Translator</strong> requires the following plugins to be installed and active:</p>';
+		$message .= '<ul><li>' . implode( '</li><li>', array_map( 'esc_html', $this->missing_dependencies ) ) . '</li></ul>';
+		$message .= '<p>Please activate them and try again.</p>';
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/h5p-wpml-translator-admin.js', array( 'jquery' ), $this->version, false );
-
+		echo '<div class="notice notice-error">' . $message . '</div>';
 	}
 
 }

@@ -151,7 +151,10 @@ class H5p_Wpml_Translator {
 	 * @access   private
 	 */
 	private function define_admin_hooks() {
-		// No admin hooks right now.
+		$plugin_admin = new H5p_Wpml_Translator_Admin( $this->get_plugin_name(), $this->get_version() );
+
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'check_dependencies' );
+		$this->loader->add_action( 'admin_notices', $plugin_admin, 'render_dependency_notice' );
 	}
 
 	/**
