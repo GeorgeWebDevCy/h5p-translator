@@ -8,17 +8,17 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://example.com
+ * @link              https://www.georgenicolaou.me
  * @since             1.0.0
  * @package           H5p_Wpml_Translator
  *
  * @wordpress-plugin
  * Plugin Name:       H5P WPML Translator
- * Plugin URI:        https://example.com/h5p-wpml-translator
+ * Plugin URI:        https://www.georgenicolaou.me/h5p-wpml-translator
  * Description:       Make H5P content translatable with WPML String Translation.
  * Version:           1.0.0
  * Author:            Georg
- * Author URI:        https://example.com/
+ * Author URI:        https://www.georgenicolaou.me
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       h5p-wpml-translator
