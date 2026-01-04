@@ -1,0 +1,74 @@
+=== H5P WPML Translator ===
+Contributors: orionaselite
+Donate link: 
+Tags: h5p, wpml, translation, multilingual, string-translation, interactive-content
+Requires at least: 5.0
+Tested up to: 6.6
+Requires PHP: 7.4
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+
+Translate H5P content strings with WPML String Translation without duplicating content.
+
+== Description ==
+
+H5P content stores text inside JSON, so WPML does not see it as normal post content.
+This plugin reads the H5P semantics for each content type, registers text fields
+with WPML String Translation, and swaps in translations at render time.
+
+Key features:
+
+* Registers text, textarea, and html fields in H5P content parameters.
+* Supports nested libraries, groups, and lists based on H5P semantics.
+* Keeps a single H5P item per language and renders the correct translation.
+* Works for shortcode and embed rendering.
+
+Update notes:
+
+* This plugin uses plugin-update-checker to read updates from
+  https://github.com/GeorgeWebDevCy/h5p-translator (branch: main).
+* The Composer autoloader is required at runtime. Ensure the `vendor/` directory
+  is present on the installed plugin, or run `composer install` before upload.
+
+== Installation ==
+
+1. Install and activate the H5P plugin.
+2. Install and activate WPML and WPML String Translation.
+3. Upload this plugin to `/wp-content/plugins/` and activate it.
+4. Visit a page that renders an H5P item to register its strings.
+5. Translate strings under WPML -> String Translation (context: `H5P Content {id}`).
+
+== Frequently Asked Questions ==
+
+= Where do the H5P strings appear in WPML? =
+
+Open WPML -> String Translation and filter by context `H5P Content {id}`.
+
+= I do not see any strings. What should I check? =
+
+Make sure the H5P item is rendered at least once, WPML String Translation is
+active, and caches are cleared. Re-open the page to trigger registration again.
+
+= Does this modify the stored H5P content? =
+
+No. It only replaces strings at render time.
+
+= Are user answers or xAPI statements translated? =
+
+No. Only content authoring strings are translated.
+
+== Screenshots ==
+
+1. H5P strings registered in WPML String Translation.
+2. Translated H5P content rendered on the frontend.
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release.
+
+== Upgrade Notice ==
+
+= 1.0.0 =
+Initial release.
