@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,7 @@ Key features:
 * Supports nested libraries, groups, and lists based on H5P semantics.
 * Keeps a single H5P item per language and renders the correct translation.
 * Works for shortcode and embed rendering.
+* Maps H5P image fields to WPML Media Translation for per-language images.
 
 Update notes:
 
@@ -68,6 +69,9 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
+= 1.2.0 =
+* Translate H5P image fields using WPML Media Translation.
+
 = 1.1.1 =
 * Bump version.
 
@@ -81,6 +85,9 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Translate H5P image fields using WPML Media Translation.
 
 = 1.1.1 =
 Bump version.

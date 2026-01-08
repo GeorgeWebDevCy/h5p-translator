@@ -11,6 +11,7 @@ swaps in translations at render time.
 - Keeps a single H5P item per language while rendering translated strings.
 - Works with shortcode and embed rendering.
 - Adds an admin Custom CSS box injected into H5P iframes.
+- Maps H5P image fields to WPML Media Translation for per-language images.
 
 ## Requirements
 
@@ -47,6 +48,13 @@ Then activate the plugin as usual.
 ### Custom CSS
 
 Open Settings -> H5P Custom CSS to add CSS that should load inside H5P iframes.
+
+### Media Translation for Images
+
+When WPML Media Translation is enabled, H5P image fields (such as backgrounds)
+are matched to attachments so you can translate them per language. Visit the
+H5P content as an admin once to register the images, then use WPML -> Media
+Translation to provide localized files.
 
 ## Update Mechanism
 
