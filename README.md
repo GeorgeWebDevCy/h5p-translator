@@ -52,9 +52,9 @@ Open Settings -> H5P Custom CSS to add CSS that should load inside H5P iframes.
 ### Media Translation for Images
 
 When WPML Media Translation is enabled, H5P image fields (such as backgrounds)
-are matched to attachments so you can translate them per language. Visit the
-H5P content as an admin once to register the images, then use WPML -> Media
-Translation to provide localized files.
+are matched to attachments so you can translate them per language. Visit or
+edit the H5P content as an admin once to register the images, then use WPML ->
+Media Translation to provide localized files.
 
 ## Update Mechanism
 

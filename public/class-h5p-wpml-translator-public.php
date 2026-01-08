@@ -80,6 +80,7 @@ class H5p_Wpml_Translator_Public {
 
 		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
 		if ( empty( $semantics ) || ! is_array( $semantics ) ) {
+			$this->translate_media_fallback( $parameters, $content_id, $core );
 			return;
 		}
 
@@ -88,6 +89,7 @@ class H5p_Wpml_Translator_Public {
 		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
 
 		$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
+		$this->translate_media_fallback( $parameters, $content_id, $core );
 	}
 
 	/**
@@ -125,6 +127,31 @@ class H5p_Wpml_Translator_Public {
 			'path'    => $paths['url'],
 			'version' => $version,
 		);
+	}
+
+	/**
+	 * Sync H5P media when editing content in admin.
+	 */
+	public function maybe_sync_media_on_h5p_edit() {
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_h5p_contents' ) && ! current_user_can( 'edit_others_h5p_contents' ) ) {
+			return;
+		}
+
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( 'h5p_new' !== $page ) {
+			return;
+		}
+
+		$content_id = isset( $_GET['id'] ) ? (int) $_GET['id'] : 0;
+		if ( $content_id < 1 ) {
+			return;
+		}
+
+		$this->sync_media_for_content_id( $content_id );
 	}
 
 	/**
@@ -168,6 +195,55 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Sync media translation for a specific H5P content id.
+	 *
+	 * @param int $content_id
+	 */
+	private function sync_media_for_content_id( $content_id ) {
+		if ( ! $this->is_wpml_active() || ! class_exists( 'H5P_Plugin' ) ) {
+			return;
+		}
+
+		$plugin = H5P_Plugin::get_instance();
+		if ( ! $plugin || ! method_exists( $plugin, 'get_content' ) ) {
+			return;
+		}
+
+		$content = $plugin->get_content( $content_id );
+		if ( ! is_array( $content ) || empty( $content['params'] ) ) {
+			return;
+		}
+
+		$parameters = json_decode( $content['params'] );
+		if ( ! is_object( $parameters ) && ! is_array( $parameters ) ) {
+			return;
+		}
+
+		$core = $this->get_h5p_core();
+		if ( ! $core ) {
+			return;
+		}
+
+		if ( empty( $content['libraryName'] ) || ! isset( $content['libraryMajorVersion'], $content['libraryMinorVersion'] ) ) {
+			return;
+		}
+
+		$library_name = (string) $content['libraryName'];
+		$major_version = (int) $content['libraryMajorVersion'];
+		$minor_version = (int) $content['libraryMinorVersion'];
+
+		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
+		if ( ! empty( $semantics ) && is_array( $semantics ) ) {
+			$context = 'H5P Content ' . $content_id;
+			$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+
+			$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
+		}
+
+		$this->translate_media_fallback( $parameters, $content_id, $core );
 	}
 
 	/**
@@ -326,6 +402,47 @@ class H5p_Wpml_Translator_Public {
 	}
 
 	/**
+	 * Fallback scan for image fields that are missing semantics.
+	 *
+	 * @param mixed   $params
+	 * @param int|null $content_id
+	 * @param H5PCore $core
+	 * @param int     $depth
+	 */
+	private function translate_media_fallback( &$params, $content_id, $core, $depth = 0 ) {
+		if ( $depth > 20 ) {
+			return;
+		}
+
+		if ( is_object( $params ) ) {
+			if ( $this->media_value_is_image( $params ) ) {
+				$this->translate_media_field( $params, $content_id, $core );
+			}
+
+			foreach ( get_object_vars( $params ) as &$value ) {
+				if ( is_array( $value ) || is_object( $value ) ) {
+					$this->translate_media_fallback( $value, $content_id, $core, $depth + 1 );
+				}
+			}
+			unset( $value );
+			return;
+		}
+
+		if ( is_array( $params ) ) {
+			if ( $this->media_value_is_image( $params ) ) {
+				$this->translate_media_field( $params, $content_id, $core );
+			}
+
+			foreach ( $params as &$value ) {
+				if ( is_array( $value ) || is_object( $value ) ) {
+					$this->translate_media_fallback( $value, $content_id, $core, $depth + 1 );
+				}
+			}
+			unset( $value );
+		}
+	}
+
+	/**
 	 * Translate media fields (images) via WPML Media Translation.
 	 *
 	 * @param mixed   $value
@@ -474,7 +591,10 @@ class H5p_Wpml_Translator_Public {
 			return 0;
 		}
 
-		if ( ! current_user_can( 'upload_files' ) ) {
+		if ( ! current_user_can( 'upload_files' )
+			&& ! current_user_can( 'edit_h5p_contents' )
+			&& ! current_user_can( 'edit_others_h5p_contents' )
+		) {
 			return 0;
 		}
 
