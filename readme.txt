@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.10
+Stable tag: 1.2.11
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,10 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
+= 1.2.11 =
+* Run text fallback for all libraries even when semantics exist to catch missing fields.
+* Align fallback paths with nested library parameters to keep string keys stable.
+
 = 1.2.10 =
 * Only register strings in the default language to prevent translation resets.
 
@@ -116,6 +120,9 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.11 =
+Run text fallback for all libraries even when semantics exist to catch missing fields.
 
 = 1.2.10 =
 Only register strings in the default language to prevent translation resets.

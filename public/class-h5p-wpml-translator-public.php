@@ -45,6 +45,13 @@ class H5p_Wpml_Translator_Public {
 	private $wpml_active = null;
 
 	/**
+	 * Track translated paths to avoid duplicate fallback registrations.
+	 *
+	 * @var array
+	 */
+	private $translated_paths = array();
+
+	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -78,6 +85,8 @@ class H5p_Wpml_Translator_Public {
 			return;
 		}
 
+		$this->translated_paths = array();
+
 		$content_id = $this->resolve_content_id();
 		$context = $content_id ? 'H5P Content ' . $content_id : 'H5P Content';
 		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
@@ -92,6 +101,9 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
+		if ( $this->should_use_text_fallback( $library_name ) ) {
+			$this->translate_text_fallback( $parameters, $context, $path_prefix );
+		}
 		$this->translate_media_fallback( $parameters, $content_id, $core );
 	}
 
@@ -230,6 +242,8 @@ class H5p_Wpml_Translator_Public {
 			return;
 		}
 
+		$this->translated_paths = array();
+
 		if ( empty( $content['libraryName'] ) || ! isset( $content['libraryMajorVersion'], $content['libraryMinorVersion'] ) ) {
 			return;
 		}
@@ -244,7 +258,9 @@ class H5p_Wpml_Translator_Public {
 
 		if ( ! empty( $semantics ) && is_array( $semantics ) ) {
 			$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
-		} elseif ( $this->should_use_text_fallback( $library_name ) ) {
+		}
+
+		if ( $this->should_use_text_fallback( $library_name ) ) {
 			$this->translate_text_fallback( $parameters, $context, $path_prefix );
 		}
 
@@ -507,6 +523,10 @@ class H5p_Wpml_Translator_Public {
 				return;
 			}
 
+			if ( $this->is_path_translated( $path ) ) {
+				return;
+			}
+
 			if ( $this->should_skip_fallback_string( $value, $path ) ) {
 				return;
 			}
@@ -517,8 +537,17 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		if ( is_object( $value ) ) {
+			$library = null;
+			if ( isset( $value->library ) && is_string( $value->library ) ) {
+				$library = $this->parse_library_string( $value->library );
+			}
+
 			foreach ( get_object_vars( $value ) as $key => &$child ) {
-				$child_path = $path ? $path . '.' . $key : $key;
+				if ( 'params' === $key && $library ) {
+					$child_path = $path ? $path . '.library[' . $library['key'] . ']' : 'library[' . $library['key'] . ']';
+				} else {
+					$child_path = $path ? $path . '.' . $key : $key;
+				}
 				$this->translate_text_fallback( $child, $context, $child_path, $depth + 1 );
 			}
 			unset( $child );
@@ -527,8 +556,15 @@ class H5p_Wpml_Translator_Public {
 
 		if ( is_array( $value ) ) {
 			foreach ( $value as $key => &$child ) {
-				$segment = is_int( $key ) ? '[' . $key . ']' : '.' . $key;
-				$child_path = $path ? $path . $segment : ( is_int( $key ) ? '[' . $key . ']' : $key );
+				if ( is_int( $key ) ) {
+					$segment = '[' . $key . ']';
+					if ( is_object( $child ) && isset( $child->subContentId ) ) {
+						$segment = '[subContentId:' . $child->subContentId . ']';
+					}
+				} else {
+					$segment = '.' . $key;
+				}
+				$child_path = $path ? $path . $segment : ltrim( $segment, '.' );
 				$this->translate_text_fallback( $child, $context, $child_path, $depth + 1 );
 			}
 			unset( $child );
@@ -1151,10 +1187,34 @@ class H5p_Wpml_Translator_Public {
 	 * @return string
 	 */
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
+		$this->mark_translated_path( $name );
 		if ( $this->should_register_strings() ) {
 			$this->register_string( $context, $name, $value, $allow_html );
 		}
 		return $this->translate_string( $value, $context, $name );
+	}
+
+	/**
+	 * Track a translated path for the current request.
+	 *
+	 * @param string $path
+	 */
+	private function mark_translated_path( $path ) {
+		if ( ! is_string( $path ) || '' === $path ) {
+			return;
+		}
+
+		$this->translated_paths[ $path ] = true;
+	}
+
+	/**
+	 * Check if a path was already translated.
+	 *
+	 * @param string $path
+	 * @return bool
+	 */
+	private function is_path_translated( $path ) {
+		return is_string( $path ) && isset( $this->translated_paths[ $path ] );
 	}
 
 	/**
