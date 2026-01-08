@@ -91,6 +91,42 @@ class H5p_Wpml_Translator_Public {
 	}
 
 	/**
+	 * Inject custom CSS into H5P's iframe pipeline.
+	 *
+	 * @param array  $styles
+	 * @param array  $libraries
+	 * @param string $embed_type
+	 */
+	public function add_custom_css_styles( &$styles, $libraries, $embed_type ) {
+		$css = H5p_Wpml_Translator_Custom_Css::get_css();
+		if ( '' === trim( $css ) ) {
+			return;
+		}
+
+		$paths = H5p_Wpml_Translator_Custom_Css::get_paths();
+		if ( ! $paths ) {
+			return;
+		}
+
+		if ( ! file_exists( $paths['path'] ) ) {
+			$normalized = H5p_Wpml_Translator_Custom_Css::sanitize_css( $css );
+			H5p_Wpml_Translator_Custom_Css::write_css_file( $normalized );
+		}
+
+		if ( ! file_exists( $paths['path'] ) ) {
+			return;
+		}
+
+		$mtime = filemtime( $paths['path'] );
+		$version = false !== $mtime ? (string) $mtime : $this->version;
+
+		$styles[] = (object) array(
+			'path'    => $paths['url'],
+			'version' => $version,
+		);
+	}
+
+	/**
 	 * Get the H5P core instance.
 	 *
 	 * @return H5PCore|null

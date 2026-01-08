@@ -62,6 +62,87 @@ class H5p_Wpml_Translator_Admin {
 	}
 
 	/**
+	 * Register settings for custom H5P CSS.
+	 */
+	public function register_custom_css_settings() {
+		register_setting(
+			H5p_Wpml_Translator_Custom_Css::SETTINGS_GROUP,
+			H5p_Wpml_Translator_Custom_Css::OPTION_NAME,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_custom_css' ),
+				'default'           => '',
+			)
+		);
+	}
+
+	/**
+	 * Register the custom CSS settings page.
+	 */
+	public function register_custom_css_page() {
+		add_options_page(
+			'H5P Custom CSS',
+			'H5P Custom CSS',
+			'manage_options',
+			'h5p-wpml-translator-css',
+			array( $this, 'render_custom_css_page' )
+		);
+	}
+
+	/**
+	 * Render the custom CSS settings page.
+	 */
+	public function render_custom_css_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$option_name = H5p_Wpml_Translator_Custom_Css::OPTION_NAME;
+		$css_value = get_option( $option_name, '' );
+		?>
+		<div class="wrap">
+			<h1>H5P Custom CSS</h1>
+			<form method="post" action="options.php">
+				<?php settings_fields( H5p_Wpml_Translator_Custom_Css::SETTINGS_GROUP ); ?>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">
+							<label for="h5p-wpml-translator-custom-css">Custom CSS</label>
+						</th>
+						<td>
+							<textarea
+								id="h5p-wpml-translator-custom-css"
+								name="<?php echo esc_attr( $option_name ); ?>"
+								rows="12"
+								class="large-text code"
+								spellcheck="false"
+							><?php echo esc_textarea( $css_value ); ?></textarea>
+							<p class="description">
+								Your CSS is loaded inside H5P iframes via <code>h5p_alter_library_styles</code>.
+							</p>
+						</td>
+					</tr>
+				</table>
+				<?php submit_button(); ?>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Sanitize and persist custom CSS.
+	 *
+	 * @param mixed $value
+	 * @return string
+	 */
+	public function sanitize_custom_css( $value ) {
+		$css = H5p_Wpml_Translator_Custom_Css::sanitize_css( $value );
+		H5p_Wpml_Translator_Custom_Css::write_css_file( $css );
+
+		return $css;
+	}
+
+	/**
 	 * Check required plugins and show an admin notice if missing.
 	 *
 	 * @since    1.0.0

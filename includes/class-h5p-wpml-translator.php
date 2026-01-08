@@ -112,6 +112,11 @@ class H5p_Wpml_Translator {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-h5p-wpml-translator-i18n.php';
 
 		/**
+		 * Custom CSS helper.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-h5p-wpml-translator-custom-css.php';
+
+		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-h5p-wpml-translator-admin.php';
@@ -154,6 +159,8 @@ class H5p_Wpml_Translator {
 		$plugin_admin = new H5p_Wpml_Translator_Admin( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'check_dependencies' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_custom_css_settings' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_custom_css_page' );
 		$this->loader->add_action( 'admin_notices', $plugin_admin, 'render_dependency_notice' );
 	}
 
@@ -169,6 +176,7 @@ class H5p_Wpml_Translator {
 		$plugin_public = new H5p_Wpml_Translator_Public( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'h5p_alter_filtered_parameters', $plugin_public, 'translate_parameters', 10, 4 );
+		$this->loader->add_action( 'h5p_alter_library_styles', $plugin_public, 'add_custom_css_styles', 10, 3 );
 
 	}
 

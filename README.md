@@ -10,6 +10,7 @@ swaps in translations at render time.
 - Traverses nested libraries, groups, and lists using H5P semantics.
 - Keeps a single H5P item per language while rendering translated strings.
 - Works with shortcode and embed rendering.
+- Adds an admin Custom CSS box injected into H5P iframes.
 
 ## Requirements
 
@@ -42,6 +43,10 @@ Then activate the plugin as usual.
 2. Go to WPML -> String Translation.
 3. Filter by context `H5P Content {id}` and add translations.
 4. Reload the page to see translated content.
+
+### Custom CSS
+
+Open Settings -> H5P Custom CSS to add CSS that should load inside H5P iframes.
 
 ## Update Mechanism
 
