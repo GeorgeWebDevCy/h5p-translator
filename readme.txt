@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
+= 1.2.4 =
+* Bump version.
+
 = 1.2.3 =
 * Respect current WPML language when resolving translated media.
 
@@ -94,6 +97,9 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.4 =
+Bump version.
 
 = 1.2.3 =
 Respect current WPML language when resolving translated media.

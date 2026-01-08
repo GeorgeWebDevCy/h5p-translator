@@ -694,12 +694,16 @@ class H5p_Wpml_Translator_Public {
 		$language = $this->get_current_language();
 
 		if ( function_exists( 'icl_object_id' ) ) {
-			$translated = icl_object_id( $attachment_id, 'attachment', true, $language );
+			$translated = $language
+				? icl_object_id( $attachment_id, 'attachment', true, $language )
+				: icl_object_id( $attachment_id, 'attachment', true );
 			return $translated ? (int) $translated : 0;
 		}
 
 		if ( has_filter( 'wpml_object_id' ) ) {
-			$translated = apply_filters( 'wpml_object_id', $attachment_id, 'attachment', true, $language );
+			$translated = $language
+				? apply_filters( 'wpml_object_id', $attachment_id, 'attachment', true, $language )
+				: apply_filters( 'wpml_object_id', $attachment_id, 'attachment', true );
 			return $translated ? (int) $translated : 0;
 		}
 
@@ -727,6 +731,28 @@ class H5p_Wpml_Translator_Public {
 				$language = sanitize_key( wp_unslash( $_GET['lang'] ) );
 			} elseif ( isset( $_COOKIE['wp-wpml_current_language'] ) ) {
 				$language = sanitize_key( wp_unslash( $_COOKIE['wp-wpml_current_language'] ) );
+			}
+		}
+
+		if ( ( ! is_string( $language ) || '' === $language ) && has_filter( 'wpml_active_languages' ) ) {
+			$languages = apply_filters(
+				'wpml_active_languages',
+				null,
+				array(
+					'skip_missing' => 0,
+					'orderby'      => 'code',
+				)
+			);
+
+			if ( is_array( $languages ) && isset( $_SERVER['REQUEST_URI'] ) ) {
+				$path = parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
+				$path = is_string( $path ) ? trim( $path, '/' ) : '';
+				if ( '' !== $path ) {
+					$segment = strtok( $path, '/' );
+					if ( $segment && isset( $languages[ $segment ] ) ) {
+						$language = $segment;
+					}
+				}
 			}
 		}
 
