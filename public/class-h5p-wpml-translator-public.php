@@ -718,7 +718,29 @@ class H5p_Wpml_Translator_Public {
 	private function get_current_language() {
 		$language = null;
 
-		if ( has_filter( 'wpml_current_language' ) ) {
+		$languages = null;
+		if ( has_filter( 'wpml_active_languages' ) ) {
+			$languages = apply_filters(
+				'wpml_active_languages',
+				null,
+				array(
+					'skip_missing' => 0,
+					'orderby'      => 'code',
+				)
+			);
+		}
+
+		if ( is_array( $languages ) ) {
+			if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+				$language = $this->detect_language_from_url( wp_unslash( $_SERVER['REQUEST_URI'] ), $languages );
+			}
+
+			if ( ( ! is_string( $language ) || '' === $language ) && isset( $_SERVER['HTTP_REFERER'] ) ) {
+				$language = $this->detect_language_from_url( wp_unslash( $_SERVER['HTTP_REFERER'] ), $languages );
+			}
+		}
+
+		if ( ( ! is_string( $language ) || '' === $language ) && has_filter( 'wpml_current_language' ) ) {
 			$language = apply_filters( 'wpml_current_language', null );
 		}
 
@@ -734,33 +756,37 @@ class H5p_Wpml_Translator_Public {
 			}
 		}
 
-		if ( ( ! is_string( $language ) || '' === $language ) && has_filter( 'wpml_active_languages' ) ) {
-			$languages = apply_filters(
-				'wpml_active_languages',
-				null,
-				array(
-					'skip_missing' => 0,
-					'orderby'      => 'code',
-				)
-			);
-
-			if ( is_array( $languages ) && isset( $_SERVER['REQUEST_URI'] ) ) {
-				$path = parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
-				$path = is_string( $path ) ? trim( $path, '/' ) : '';
-				if ( '' !== $path ) {
-					$segment = strtok( $path, '/' );
-					if ( $segment && isset( $languages[ $segment ] ) ) {
-						$language = $segment;
-					}
-				}
-			}
-		}
-
 		if ( ! is_string( $language ) || '' === $language ) {
 			return null;
 		}
 
 		return $language;
+	}
+
+	/**
+	 * Detect the language from a URL path based on active languages.
+	 *
+	 * @param string $url
+	 * @param array  $languages
+	 * @return string|null
+	 */
+	private function detect_language_from_url( $url, $languages ) {
+		if ( ! is_string( $url ) || '' === $url || ! is_array( $languages ) ) {
+			return null;
+		}
+
+		$path = parse_url( $url, PHP_URL_PATH );
+		$path = is_string( $path ) ? trim( $path, '/' ) : '';
+		if ( '' === $path ) {
+			return null;
+		}
+
+		$segment = strtok( $path, '/' );
+		if ( ! $segment || ! isset( $languages[ $segment ] ) ) {
+			return null;
+		}
+
+		return $segment;
 	}
 
 	/**
