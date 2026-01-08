@@ -327,6 +327,9 @@ class H5p_Wpml_Translator_Public {
 			case 'html':
 				if ( is_string( $value ) && $value !== '' ) {
 					$allow_html = ( 'html' === $field->type ) || isset( $field->tags );
+					if ( ! $allow_html && false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) ) {
+						$allow_html = true;
+					}
 					$value = $this->register_and_translate( $value, $context, $path, $allow_html );
 				}
 				return;
@@ -385,17 +388,27 @@ class H5p_Wpml_Translator_Public {
 					return;
 				}
 
-				$semantics = $this->get_semantics( $core, $library['name'], $library['major'], $library['minor'] );
-				if ( empty( $semantics ) || ! is_array( $semantics ) ) {
+				$nested_path = $path . '.library[' . $library['key'] . ']';
+				$params_value = null;
+				if ( is_object( $value ) && isset( $value->params ) ) {
+					$params_value = &$value->params;
+				} elseif ( is_array( $value ) && isset( $value['params'] ) ) {
+					$params_value = &$value['params'];
+				}
+
+				if ( null === $params_value ) {
 					return;
 				}
 
-				$nested_path = $path . '.library[' . $library['key'] . ']';
-				if ( is_object( $value ) && isset( $value->params ) ) {
-					$this->translate_fields( $value->params, $semantics, $context, $nested_path, $core, $content_id );
-				} elseif ( is_array( $value ) && isset( $value['params'] ) ) {
-					$this->translate_fields( $value['params'], $semantics, $context, $nested_path, $core, $content_id );
+				$semantics = $this->get_semantics( $core, $library['name'], $library['major'], $library['minor'] );
+				if ( empty( $semantics ) || ! is_array( $semantics ) ) {
+					if ( $this->should_use_text_fallback( $library['name'] ) ) {
+						$this->translate_text_fallback( $params_value, $context, $nested_path );
+					}
+					return;
 				}
+
+				$this->translate_fields( $params_value, $semantics, $context, $nested_path, $core, $content_id );
 				return;
 
 			default:
