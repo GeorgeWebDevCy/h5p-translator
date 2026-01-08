@@ -691,17 +691,50 @@ class H5p_Wpml_Translator_Public {
 	 * @return int
 	 */
 	private function get_translated_attachment_id( $attachment_id ) {
+		$language = $this->get_current_language();
+
 		if ( function_exists( 'icl_object_id' ) ) {
-			$translated = icl_object_id( $attachment_id, 'attachment', true );
+			$translated = icl_object_id( $attachment_id, 'attachment', true, $language );
 			return $translated ? (int) $translated : 0;
 		}
 
 		if ( has_filter( 'wpml_object_id' ) ) {
-			$translated = apply_filters( 'wpml_object_id', $attachment_id, 'attachment', true );
+			$translated = apply_filters( 'wpml_object_id', $attachment_id, 'attachment', true, $language );
 			return $translated ? (int) $translated : 0;
 		}
 
 		return (int) $attachment_id;
+	}
+
+	/**
+	 * Get the current WPML language code.
+	 *
+	 * @return string|null
+	 */
+	private function get_current_language() {
+		$language = null;
+
+		if ( has_filter( 'wpml_current_language' ) ) {
+			$language = apply_filters( 'wpml_current_language', null );
+		}
+
+		if ( ( ! is_string( $language ) || '' === $language ) && defined( 'ICL_LANGUAGE_CODE' ) ) {
+			$language = ICL_LANGUAGE_CODE;
+		}
+
+		if ( ! is_string( $language ) || '' === $language ) {
+			if ( isset( $_GET['lang'] ) ) {
+				$language = sanitize_key( wp_unslash( $_GET['lang'] ) );
+			} elseif ( isset( $_COOKIE['wp-wpml_current_language'] ) ) {
+				$language = sanitize_key( wp_unslash( $_COOKIE['wp-wpml_current_language'] ) );
+			}
+		}
+
+		if ( ! is_string( $language ) || '' === $language ) {
+			return null;
+		}
+
+		return $language;
 	}
 
 	/**
