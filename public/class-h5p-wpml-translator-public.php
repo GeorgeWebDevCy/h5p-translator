@@ -1243,7 +1243,10 @@ class H5p_Wpml_Translator_Public {
 	 */
 	private function translate_string( $value, $context, $name ) {
 		if ( has_filter( 'wpml_translate_single_string' ) ) {
-			$translated = apply_filters( 'wpml_translate_single_string', $value, $context, $name );
+			$language = $this->get_current_language();
+			$translated = $language
+				? apply_filters( 'wpml_translate_single_string', $value, $context, $name, $language )
+				: apply_filters( 'wpml_translate_single_string', $value, $context, $name );
 			return is_string( $translated ) ? $translated : $value;
 		}
 
