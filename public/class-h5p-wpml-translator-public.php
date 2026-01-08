@@ -523,7 +523,11 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		if ( 0 === strpos( $path, '/' ) ) {
-			return home_url( $path );
+			$origin = $this->get_site_origin();
+			if ( $origin ) {
+				return $origin . $path;
+			}
+			return null;
 		}
 
 		$base_url = $this->get_h5p_base_url( $core );
@@ -564,20 +568,61 @@ class H5p_Wpml_Translator_Public {
 	 * @return string|null
 	 */
 	private function get_h5p_base_url( $core ) {
+		$uploads = wp_upload_dir();
+		$uploads_base = ! empty( $uploads['baseurl'] ) ? rtrim( $uploads['baseurl'], '/' ) : null;
+		$default_base = $uploads_base ? $uploads_base . '/h5p' : null;
+
 		if ( is_object( $core ) && ! empty( $core->url ) ) {
 			$base = rtrim( (string) $core->url, '/' );
-			if ( 0 === strpos( $base, '//' ) ) {
-				$scheme = is_ssl() ? 'https:' : 'http:';
-				$base = $scheme . $base;
-			}
-			if ( 0 === strpos( $base, '/' ) ) {
-				$base = home_url( $base );
+
+			if ( preg_match( '#^https?://#i', $base ) ) {
+				return $base;
 			}
 
-			return $base;
+			if ( 0 === strpos( $base, '//' ) ) {
+				if ( $default_base ) {
+					return $default_base;
+				}
+
+				$scheme = is_ssl() ? 'https:' : 'http:';
+				return $scheme . $base;
+			}
+
+			if ( 0 === strpos( $base, '/' ) ) {
+				if ( $default_base ) {
+					return $default_base;
+				}
+
+				$origin = $this->get_site_origin();
+				return $origin ? $origin . $base : null;
+			}
 		}
 
-		return null;
+		return $default_base;
+	}
+
+	/**
+	 * Get site origin from uploads base URL to avoid language prefixes.
+	 *
+	 * @return string|null
+	 */
+	private function get_site_origin() {
+		$uploads = wp_upload_dir();
+		if ( empty( $uploads['baseurl'] ) ) {
+			return null;
+		}
+
+		$parts = wp_parse_url( $uploads['baseurl'] );
+		if ( empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return null;
+		}
+
+		$origin = $parts['scheme'] . '://' . $parts['host'];
+		if ( ! empty( $parts['port'] ) ) {
+			$origin .= ':' . $parts['port'];
+		}
+
+		return $origin;
 	}
 
 	/**
