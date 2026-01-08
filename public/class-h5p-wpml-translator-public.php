@@ -375,6 +375,8 @@ class H5p_Wpml_Translator_Public {
 					$suffix = $index;
 					if ( is_object( $item ) && isset( $item->subContentId ) ) {
 						$suffix = 'subContentId:' . $item->subContentId;
+					} elseif ( is_array( $item ) && isset( $item['subContentId'] ) ) {
+						$suffix = 'subContentId:' . $item['subContentId'];
 					}
 
 					$item_path = $path . '[' . $suffix . ']';
@@ -560,6 +562,8 @@ class H5p_Wpml_Translator_Public {
 					$segment = '[' . $key . ']';
 					if ( is_object( $child ) && isset( $child->subContentId ) ) {
 						$segment = '[subContentId:' . $child->subContentId . ']';
+					} elseif ( is_array( $child ) && isset( $child['subContentId'] ) ) {
+						$segment = '[subContentId:' . $child['subContentId'] . ']';
 					}
 				} else {
 					$segment = '.' . $key;
@@ -1192,7 +1196,7 @@ class H5p_Wpml_Translator_Public {
 		if ( $this->should_register_strings() ) {
 			$this->register_string( $context, $normalized_name, $value, $allow_html );
 		}
-		return $this->translate_string( $value, $context, $normalized_name );
+		return $this->translate_string( $value, $context, $normalized_name, $name );
 	}
 
 	/**
@@ -1272,11 +1276,37 @@ class H5p_Wpml_Translator_Public {
 	 * @param string $value
 	 * @param string $context
 	 * @param string $name
+	 * @param string|null $original_name
 	 * @return string
 	 */
-	private function translate_string( $value, $context, $name ) {
+	private function translate_string( $value, $context, $name, $original_name = null ) {
+		$language = $this->get_current_language();
+		$translated = $this->translate_string_for_name( $value, $context, $name, $language );
+
+		if ( $this->should_use_legacy_translation( $value, $translated, $name, $original_name, $language ) ) {
+			$legacy_name = $this->get_legacy_string_name( $original_name );
+			if ( $legacy_name && $legacy_name !== $name ) {
+				$legacy_translation = $this->translate_string_for_name( $value, $context, $legacy_name, $language );
+				if ( $this->is_valid_legacy_translation( $value, $legacy_translation ) ) {
+					return $legacy_translation;
+				}
+			}
+		}
+
+		return $translated;
+	}
+
+	/**
+	 * Translate a string via WPML for a specific name.
+	 *
+	 * @param string      $value
+	 * @param string      $context
+	 * @param string      $name
+	 * @param string|null $language
+	 * @return string
+	 */
+	private function translate_string_for_name( $value, $context, $name, $language ) {
 		if ( has_filter( 'wpml_translate_single_string' ) ) {
-			$language = $this->get_current_language();
 			$translated = $language
 				? apply_filters( 'wpml_translate_single_string', $value, $context, $name, $language )
 				: apply_filters( 'wpml_translate_single_string', $value, $context, $name );
@@ -1288,6 +1318,76 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Determine if legacy translation lookup should run.
+	 *
+	 * @param string      $value
+	 * @param string      $translated
+	 * @param string      $name
+	 * @param string|null $original_name
+	 * @param string|null $language
+	 * @return bool
+	 */
+	private function should_use_legacy_translation( $value, $translated, $name, $original_name, $language ) {
+		if ( ! is_string( $original_name ) || '' === $original_name ) {
+			return false;
+		}
+
+		if ( $original_name === $name ) {
+			return false;
+		}
+
+		$default_language = $this->get_default_language();
+		if ( $default_language && $language && $language === $default_language ) {
+			return false;
+		}
+
+		return ( '' === $translated && '' !== $value ) || $translated === $value;
+	}
+
+	/**
+	 * Validate a legacy translation result.
+	 *
+	 * @param string $value
+	 * @param string $translated
+	 * @return bool
+	 */
+	private function is_valid_legacy_translation( $value, $translated ) {
+		if ( ! is_string( $translated ) ) {
+			return false;
+		}
+
+		if ( '' === $translated && '' !== $value ) {
+			return false;
+		}
+
+		return $translated !== $value;
+	}
+
+	/**
+	 * Get legacy string name for pre-hash registrations.
+	 *
+	 * @param string $name
+	 * @return string
+	 */
+	private function get_legacy_string_name( $name ) {
+		if ( ! is_string( $name ) ) {
+			return '';
+		}
+
+		$name = trim( $name );
+		if ( '' === $name ) {
+			return '';
+		}
+
+		$max_length = 160;
+		if ( strlen( $name ) <= $max_length ) {
+			return $name;
+		}
+
+		return substr( $name, 0, $max_length );
 	}
 
 	/**
