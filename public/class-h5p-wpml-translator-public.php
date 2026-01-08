@@ -78,15 +78,18 @@ class H5p_Wpml_Translator_Public {
 			return;
 		}
 
-		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
-		if ( empty( $semantics ) || ! is_array( $semantics ) ) {
-			$this->translate_media_fallback( $parameters, $content_id, $core );
-			return;
-		}
-
 		$content_id = $this->resolve_content_id();
 		$context = $content_id ? 'H5P Content ' . $content_id : 'H5P Content';
 		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+
+		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
+		if ( empty( $semantics ) || ! is_array( $semantics ) ) {
+			if ( $this->should_use_text_fallback( $library_name ) ) {
+				$this->translate_text_fallback( $parameters, $context, $path_prefix );
+			}
+			$this->translate_media_fallback( $parameters, $content_id, $core );
+			return;
+		}
 
 		$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
 		$this->translate_media_fallback( $parameters, $content_id, $core );
@@ -236,11 +239,13 @@ class H5p_Wpml_Translator_Public {
 		$minor_version = (int) $content['libraryMinorVersion'];
 
 		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
-		if ( ! empty( $semantics ) && is_array( $semantics ) ) {
-			$context = 'H5P Content ' . $content_id;
-			$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+		$context = 'H5P Content ' . $content_id;
+		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
 
+		if ( ! empty( $semantics ) && is_array( $semantics ) ) {
 			$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
+		} elseif ( $this->should_use_text_fallback( $library_name ) ) {
+			$this->translate_text_fallback( $parameters, $context, $path_prefix );
 		}
 
 		$this->translate_media_fallback( $parameters, $content_id, $core );
@@ -440,6 +445,146 @@ class H5p_Wpml_Translator_Public {
 			}
 			unset( $value );
 		}
+	}
+
+	/**
+	 * Determine if text fallback should run for a library.
+	 *
+	 * @param string $library_name
+	 * @return bool
+	 */
+	private function should_use_text_fallback( $library_name ) {
+		$default = array( 'H5P.GameMap' );
+		$libraries = apply_filters( 'h5p_wpml_translator_text_fallback_libraries', $default );
+
+		if ( ! is_array( $libraries ) ) {
+			$libraries = $default;
+		}
+
+		return in_array( $library_name, $libraries, true );
+	}
+
+	/**
+	 * Fallback scan for strings when semantics are missing.
+	 *
+	 * @param mixed  $value
+	 * @param string $context
+	 * @param string $path
+	 * @param int    $depth
+	 */
+	private function translate_text_fallback( &$value, $context, $path, $depth = 0 ) {
+		if ( $depth > 20 ) {
+			return;
+		}
+
+		if ( is_string( $value ) ) {
+			if ( '' === trim( $value ) ) {
+				return;
+			}
+
+			if ( $this->should_skip_fallback_string( $value, $path ) ) {
+				return;
+			}
+
+			$allow_html = ( false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) );
+			$value = $this->register_and_translate( $value, $context, $path, $allow_html );
+			return;
+		}
+
+		if ( is_object( $value ) ) {
+			foreach ( get_object_vars( $value ) as $key => &$child ) {
+				$child_path = $path ? $path . '.' . $key : $key;
+				$this->translate_text_fallback( $child, $context, $child_path, $depth + 1 );
+			}
+			unset( $child );
+			return;
+		}
+
+		if ( is_array( $value ) ) {
+			foreach ( $value as $key => &$child ) {
+				$segment = is_int( $key ) ? '[' . $key . ']' : '.' . $key;
+				$child_path = $path ? $path . $segment : ( is_int( $key ) ? '[' . $key . ']' : $key );
+				$this->translate_text_fallback( $child, $context, $child_path, $depth + 1 );
+			}
+			unset( $child );
+		}
+	}
+
+	/**
+	 * Determine if a fallback string should be skipped.
+	 *
+	 * @param string $value
+	 * @param string $path
+	 * @return bool
+	 */
+	private function should_skip_fallback_string( $value, $path ) {
+		$leaf = $this->get_path_leaf( $path );
+		$skip_keys = array(
+			'path',
+			'mime',
+			'library',
+			'contentId',
+			'subContentId',
+			'file',
+			'files',
+			'source',
+			'src',
+			'url',
+			'href',
+			'action',
+		);
+
+		if ( $leaf && in_array( $leaf, $skip_keys, true ) ) {
+			return true;
+		}
+
+		if ( preg_match( '#^https?://#i', $value ) || 0 === strpos( $value, '//' ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/\\.(png|jpe?g|gif|webp|svg|bmp|mp3|mp4|webm|ogg|wav|vtt|srt|pdf|docx?|pptx?|xlsx?)(\\?.*)?$/i', $value ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i', $value ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/^rgba?\\(/i', $value ) || preg_match( '/^hsla?\\(/i', $value ) ) {
+			return true;
+		}
+
+		if ( is_numeric( $value ) ) {
+			return true;
+		}
+
+		$trimmed = trim( $value );
+		if ( '' !== $trimmed && ( ( 0 === strpos( $trimmed, '{' ) && strrpos( $trimmed, '}' ) === ( strlen( $trimmed ) - 1 ) )
+			|| ( 0 === strpos( $trimmed, '[' ) && strrpos( $trimmed, ']' ) === ( strlen( $trimmed ) - 1 ) ) ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the last key segment for a fallback path.
+	 *
+	 * @param string $path
+	 * @return string|null
+	 */
+	private function get_path_leaf( $path ) {
+		if ( ! is_string( $path ) || '' === $path ) {
+			return null;
+		}
+
+		$clean = preg_replace( '/\\[[^\\]]+\\]$/', '', $path );
+		$pos = strrpos( $clean, '.' );
+		if ( false === $pos ) {
+			return $clean;
+		}
+
+		return substr( $clean, $pos + 1 );
 	}
 
 	/**
