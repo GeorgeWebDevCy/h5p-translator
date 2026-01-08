@@ -454,11 +454,23 @@ class H5p_Wpml_Translator_Public {
 	 * @return bool
 	 */
 	private function should_use_text_fallback( $library_name ) {
-		$default = array( 'H5P.GameMap' );
+		$default = array( '*' );
 		$libraries = apply_filters( 'h5p_wpml_translator_text_fallback_libraries', $default );
+
+		if ( true === $libraries ) {
+			return true;
+		}
+
+		if ( false === $libraries ) {
+			return false;
+		}
 
 		if ( ! is_array( $libraries ) ) {
 			$libraries = $default;
+		}
+
+		if ( in_array( '*', $libraries, true ) ) {
+			return true;
 		}
 
 		return in_array( $library_name, $libraries, true );
