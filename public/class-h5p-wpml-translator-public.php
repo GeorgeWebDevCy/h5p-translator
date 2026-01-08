@@ -979,6 +979,45 @@ class H5p_Wpml_Translator_Public {
 	}
 
 	/**
+	 * Get the default WPML language code.
+	 *
+	 * @return string|null
+	 */
+	private function get_default_language() {
+		if ( has_filter( 'wpml_default_language' ) ) {
+			$default_language = apply_filters( 'wpml_default_language', null );
+			if ( is_string( $default_language ) && '' !== $default_language ) {
+				return $default_language;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Determine if strings should be registered for the current request.
+	 *
+	 * @return bool
+	 */
+	private function should_register_strings() {
+		if ( ! $this->is_wpml_active() ) {
+			return true;
+		}
+
+		$default_language = $this->get_default_language();
+		if ( ! $default_language ) {
+			return true;
+		}
+
+		$current_language = $this->get_current_language();
+		if ( ! $current_language ) {
+			return true;
+		}
+
+		return $current_language === $default_language;
+	}
+
+	/**
 	 * Detect the language from a URL path based on active languages.
 	 *
 	 * @param string $url
@@ -1112,7 +1151,9 @@ class H5p_Wpml_Translator_Public {
 	 * @return string
 	 */
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
-		$this->register_string( $context, $name, $value, $allow_html );
+		if ( $this->should_register_strings() ) {
+			$this->register_string( $context, $name, $value, $allow_html );
+		}
 		return $this->translate_string( $value, $context, $name );
 	}
 
