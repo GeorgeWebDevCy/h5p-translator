@@ -1187,11 +1187,12 @@ class H5p_Wpml_Translator_Public {
 	 * @return string
 	 */
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
-		$this->mark_translated_path( $name );
+		$normalized_name = $this->normalize_string_name( $name );
+		$this->mark_translated_path( $normalized_name );
 		if ( $this->should_register_strings() ) {
-			$this->register_string( $context, $name, $value, $allow_html );
+			$this->register_string( $context, $normalized_name, $value, $allow_html );
 		}
-		return $this->translate_string( $value, $context, $name );
+		return $this->translate_string( $value, $context, $normalized_name );
 	}
 
 	/**
@@ -1200,11 +1201,12 @@ class H5p_Wpml_Translator_Public {
 	 * @param string $path
 	 */
 	private function mark_translated_path( $path ) {
-		if ( ! is_string( $path ) || '' === $path ) {
+		$normalized = $this->normalize_string_name( $path );
+		if ( '' === $normalized ) {
 			return;
 		}
 
-		$this->translated_paths[ $path ] = true;
+		$this->translated_paths[ $normalized ] = true;
 	}
 
 	/**
@@ -1214,7 +1216,38 @@ class H5p_Wpml_Translator_Public {
 	 * @return bool
 	 */
 	private function is_path_translated( $path ) {
-		return is_string( $path ) && isset( $this->translated_paths[ $path ] );
+		$normalized = $this->normalize_string_name( $path );
+		return '' !== $normalized && isset( $this->translated_paths[ $normalized ] );
+	}
+
+	/**
+	 * Normalize string names to avoid WPML truncation collisions.
+	 *
+	 * @param string $name
+	 * @return string
+	 */
+	private function normalize_string_name( $name ) {
+		if ( ! is_string( $name ) ) {
+			return '';
+		}
+
+		$name = trim( $name );
+		if ( '' === $name ) {
+			return '';
+		}
+
+		$max_length = 160;
+		if ( strlen( $name ) <= $max_length ) {
+			return $name;
+		}
+
+		$hash = substr( sha1( $name ), 0, 12 );
+		$prefix_length = $max_length - ( strlen( $hash ) + 1 );
+		if ( $prefix_length < 0 ) {
+			$prefix_length = 0;
+		}
+
+		return substr( $name, 0, $prefix_length ) . '#' . $hash;
 	}
 
 	/**
