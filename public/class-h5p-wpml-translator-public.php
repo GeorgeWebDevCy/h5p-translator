@@ -448,7 +448,16 @@ class H5p_Wpml_Translator_Public {
 	 */
 	private function get_h5p_base_url( $core ) {
 		if ( is_object( $core ) && ! empty( $core->url ) ) {
-			return rtrim( $core->url, '/' );
+			$base = rtrim( (string) $core->url, '/' );
+			if ( 0 === strpos( $base, '//' ) ) {
+				$scheme = is_ssl() ? 'https:' : 'http:';
+				$base = $scheme . $base;
+			}
+			if ( 0 === strpos( $base, '/' ) ) {
+				$base = home_url( $base );
+			}
+
+			return $base;
 		}
 
 		return null;
