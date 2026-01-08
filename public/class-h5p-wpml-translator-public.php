@@ -118,7 +118,8 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		$mtime = filemtime( $paths['path'] );
-		$version = false !== $mtime ? (string) $mtime : $this->version;
+		$version_value = false !== $mtime ? (string) $mtime : $this->version;
+		$version = '?ver=' . $version_value;
 
 		$styles[] = (object) array(
 			'path'    => $paths['url'],
