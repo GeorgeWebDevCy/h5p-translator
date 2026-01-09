@@ -69,6 +69,11 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
+= 1.2.22 =
+* Fix media translation failure for guest users by relaxing capability checks.
+* Normalize translation strings (HTML entity decode & trim) for better matching.
+* Expand log skip list to filter out IDs, scores, and other diagnostic noise.
+
 = 1.2.21 =
 * Enhance H5P Live Logs with detailed status for each translation attempt (FOUND/NOT FOUND).
 * Log detected language and content IDs for better correlation.
@@ -138,6 +143,9 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.22 =
+Fix media translation for guest users and improve string matching.
 
 = 1.2.21 =
 Enhance H5P Live Logs with detailed status for each translation attempt.

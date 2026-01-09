@@ -606,6 +606,27 @@ class H5p_Wpml_Translator_Public {
 			'url',
 			'href',
 			'action',
+			'id',
+			'stageScoreId',
+			'stageProgressId',
+			'contentId',
+			'x',
+			'y',
+			'width',
+			'height',
+			'duration',
+			'time',
+			'color',
+			'colorPath',
+			'colorStage',
+			'colorStageLocked',
+			'colorStageCleared',
+			'colorPathCleared',
+			'telemetry',
+			'telemetry_x',
+			'telemetry_y',
+			'telemetry_width',
+			'telemetry_height',
 		);
 
 		if ( $leaf && in_array( $leaf, $skip_keys, true ) ) {
@@ -633,7 +654,19 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		$trimmed = trim( $value );
-		if ( '' !== $trimmed && ( ( 0 === strpos( $trimmed, '{' ) && strrpos( $trimmed, '}' ) === ( strlen( $trimmed ) - 1 ) )
+		if ( '' === $trimmed ) {
+			return true;
+		}
+
+		// Skip empty HTML tags.
+		if ( false !== strpos( $trimmed, '<' ) ) {
+			$no_tags = trim( strip_tags( $trimmed ) );
+			if ( '' === $no_tags || '&nbsp;' === $no_tags ) {
+				return true;
+			}
+		}
+
+		if ( ( ( 0 === strpos( $trimmed, '{' ) && strrpos( $trimmed, '}' ) === ( strlen( $trimmed ) - 1 ) )
 			|| ( 0 === strpos( $trimmed, '[' ) && strrpos( $trimmed, ']' ) === ( strlen( $trimmed ) - 1 ) ) ) ) {
 			return true;
 		}
@@ -865,12 +898,8 @@ class H5p_Wpml_Translator_Public {
 			return 0;
 		}
 
-		if ( ! current_user_can( 'upload_files' )
-			&& ! current_user_can( 'edit_h5p_contents' )
-			&& ! current_user_can( 'edit_others_h5p_contents' )
-		) {
-			return 0;
-		}
+		// We don't check for upload_files capability here because this is an automated 
+		// registration of existing H5P files into the Media Library for translation purposes.
 
 		$uploads = wp_upload_dir();
 		if ( empty( $uploads['baseurl'] ) || empty( $uploads['basedir'] ) ) {
@@ -1217,20 +1246,26 @@ class H5p_Wpml_Translator_Public {
 	 */
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
 		$this->mark_translated_path( $name );
+
+		// Normalize string before registration/translation.
+		// Use html_entity_decode to handle &nbsp; and other entities from H5P.
+		$normalized = trim( html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		
 		if ( $this->should_register_strings() ) {
-			$this->register_string( $context, $name, $value, $allow_html );
+			$this->register_string( $context, $name, $normalized, $allow_html );
 		}
 		
-		$translated = $this->translate_string( $value, $context, $name );
+		$translated = $this->translate_string( $normalized, $context, $name );
 		$language   = $this->get_current_language();
 
 		H5p_Wpml_Translator_Logger::log( array(
 			'type'       => 'string',
-			'status'     => ( $translated !== $value ) ? 'FOUND' : 'NOT FOUND (Source returned)',
+			'status'     => ( $translated !== $normalized ) ? 'FOUND' : 'NOT FOUND (Source returned)',
 			'lang'       => $language ?: 'Default',
 			'context'    => $context,
 			'path'       => $name,
 			'source'     => $value,
+			'normalized' => $normalized,
 			'translated' => $translated,
 		) );
 
