@@ -425,6 +425,9 @@ class H5p_Wpml_Translator_Public {
 				}
 
 				$this->translate_fields( $params_value, $semantics, $context, $nested_path, $core, $content_id );
+				if ( $this->should_use_text_fallback( $library['name'] ) ) {
+					$this->translate_text_fallback( $params_value, $context, $nested_path );
+				}
 				return;
 
 			default:
@@ -1065,18 +1068,24 @@ class H5p_Wpml_Translator_Public {
 			return null;
 		}
 
-		$path = parse_url( $url, PHP_URL_PATH );
-		$path = is_string( $path ) ? trim( $path, '/' ) : '';
-		if ( '' === $path ) {
-			return null;
+		$parts = wp_parse_url( $url );
+		$path  = isset( $parts['path'] ) ? trim( $parts['path'], '/' ) : '';
+
+		if ( '' !== $path ) {
+			$segment = strtok( $path, '/' );
+			if ( $segment && isset( $languages[ $segment ] ) ) {
+				return $segment;
+			}
 		}
 
-		$segment = strtok( $path, '/' );
-		if ( ! $segment || ! isset( $languages[ $segment ] ) ) {
-			return null;
+		if ( isset( $parts['query'] ) ) {
+			parse_str( $parts['query'], $query_vars );
+			if ( ! empty( $query_vars['lang'] ) && is_string( $query_vars['lang'] ) && isset( $languages[ $query_vars['lang'] ] ) ) {
+				return $query_vars['lang'];
+			}
 		}
 
-		return $segment;
+		return null;
 	}
 
 	/**
