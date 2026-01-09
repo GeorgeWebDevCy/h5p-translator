@@ -52,6 +52,20 @@ class H5p_Wpml_Translator_Public {
 	private $translated_paths = array();
 
 	/**
+	 * Cache for legacy string values.
+	 *
+	 * @var array
+	 */
+	private $legacy_string_value_cache = array();
+
+	/**
+	 * Cached status for the WPML strings table.
+	 *
+	 * @var bool|null
+	 */
+	private $wpml_strings_table_exists = null;
+
+	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -1285,7 +1299,7 @@ class H5p_Wpml_Translator_Public {
 
 		if ( $this->should_use_legacy_translation( $value, $translated, $name, $original_name, $language ) ) {
 			$legacy_name = $this->get_legacy_string_name( $original_name );
-			if ( $legacy_name && $legacy_name !== $name ) {
+			if ( $legacy_name && $legacy_name !== $name && $this->legacy_string_matches_value( $context, $legacy_name, $value ) ) {
 				$legacy_translation = $this->translate_string_for_name( $value, $context, $legacy_name, $language );
 				if ( $this->is_valid_legacy_translation( $value, $legacy_translation ) ) {
 					return $legacy_translation;
@@ -1364,6 +1378,80 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		return $translated !== $value;
+	}
+
+	/**
+	 * Confirm a legacy string maps to the same original value.
+	 *
+	 * @param string $context
+	 * @param string $name
+	 * @param string $value
+	 * @return bool
+	 */
+	private function legacy_string_matches_value( $context, $name, $value ) {
+		$stored = $this->get_legacy_string_value( $context, $name );
+		if ( null === $stored ) {
+			return false;
+		}
+
+		return (string) $stored === (string) $value;
+	}
+
+	/**
+	 * Load the original value stored for a legacy string.
+	 *
+	 * @param string $context
+	 * @param string $name
+	 * @return string|null
+	 */
+	private function get_legacy_string_value( $context, $name ) {
+		$cache_key = $context . '|' . $name;
+		if ( array_key_exists( $cache_key, $this->legacy_string_value_cache ) ) {
+			return $this->legacy_string_value_cache[ $cache_key ];
+		}
+
+		if ( ! $this->wpml_strings_table_exists() ) {
+			$this->legacy_string_value_cache[ $cache_key ] = null;
+			return null;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'icl_strings';
+		$stored = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT value FROM {$table} WHERE context = %s AND name = %s LIMIT 1",
+				$context,
+				$name
+			)
+		);
+
+		$this->legacy_string_value_cache[ $cache_key ] = $stored;
+
+		return $stored;
+	}
+
+	/**
+	 * Check whether the WPML strings table exists.
+	 *
+	 * @return bool
+	 */
+	private function wpml_strings_table_exists() {
+		if ( null !== $this->wpml_strings_table_exists ) {
+			return $this->wpml_strings_table_exists;
+		}
+
+		global $wpdb;
+		if ( ! $wpdb || empty( $wpdb->prefix ) ) {
+			$this->wpml_strings_table_exists = false;
+			return false;
+		}
+
+		$table = $wpdb->prefix . 'icl_strings';
+		$like = $wpdb->esc_like( $table );
+		$result = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+		$this->wpml_strings_table_exists = ! empty( $result );
+
+		return $this->wpml_strings_table_exists;
 	}
 
 	/**

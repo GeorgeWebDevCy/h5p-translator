@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.15
+Stable tag: 1.2.17
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,6 +68,12 @@ No. Only content authoring strings are translated.
 2. Translated H5P content rendered on the frontend.
 
 == Changelog ==
+
+= 1.2.17 =
+* Bump version.
+
+= 1.2.16 =
+* Only reuse legacy translations when the stored source string matches.
 
 = 1.2.15 =
 * Use subContentId for array list items to keep GameMap string keys stable.
@@ -132,6 +138,12 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.17 =
+Bump version.
+
+= 1.2.16 =
+Only reuse legacy translations when the stored source string matches.
 
 = 1.2.15 =
 Use subContentId for array list items to keep GameMap string keys stable.
