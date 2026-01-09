@@ -69,6 +69,19 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
+= 1.2.25 =
+* Final production release including all recent stability fixes for deep-nested H5P content.
+
+= 1.2.24 =
+* Align string hashing logic with WPML's internal SHA1-based algorithm for strings > 160 characters.
+* Restore full path identifiers to ensure compatibility with existing translations.
+* Enhance whitespace normalization to handle non-breaking spaces during translation matching.
+
+= 1.2.23 =
+* Implement stable paths using subContentId as root to keep string names short.
+* Add deterministic hashing (#hash) for string names exceeding 160 characters.
+* Improve logger to show both raw paths and stable names used for translation.
+
 = 1.2.22 =
 * Fix media translation failure for guest users by relaxing capability checks.
 * Normalize translation strings (HTML entity decode & trim) for better matching.
@@ -143,6 +156,15 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.25 =
+Final stability fixes for deep-nested H5P content.
+
+= 1.2.24 =
+Sync string hashing with WPML internal logic to restore existing translations.
+
+= 1.2.23 =
+Critical fix for deep-nested H5P content translation stability.
 
 = 1.2.22 =
 Fix media translation for guest users and improve string matching.

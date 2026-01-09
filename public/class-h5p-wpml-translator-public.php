@@ -1247,29 +1247,55 @@ class H5p_Wpml_Translator_Public {
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
 		$this->mark_translated_path( $name );
 
-		// Normalize string before registration/translation.
-		// Use html_entity_decode to handle &nbsp; and other entities from H5P.
-		$normalized = trim( html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		// Normalize string before registration/translation:
+		// 1. Decode HTML entities.
+		// 2. Convert non-breaking spaces (\xA0) to regular spaces.
+		// 3. Trim whitespace.
+		$normalized = html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$normalized = str_replace( "\xA0", ' ', $normalized );
+		$normalized = trim( $normalized );
 		
+		// Ensure name is stable and matches WPML's internal hashing logic for strings > 160 chars.
+		$stable_name = $this->get_stable_name( $name );
+
 		if ( $this->should_register_strings() ) {
-			$this->register_string( $context, $name, $normalized, $allow_html );
+			$this->register_string( $context, $stable_name, $normalized, $allow_html );
 		}
 		
-		$translated = $this->translate_string( $normalized, $context, $name );
+		$translated = $this->translate_string( $normalized, $context, $stable_name );
 		$language   = $this->get_current_language();
 
 		H5p_Wpml_Translator_Logger::log( array(
-			'type'       => 'string',
-			'status'     => ( $translated !== $normalized ) ? 'FOUND' : 'NOT FOUND (Source returned)',
-			'lang'       => $language ?: 'Default',
-			'context'    => $context,
-			'path'       => $name,
-			'source'     => $value,
-			'normalized' => $normalized,
-			'translated' => $translated,
+			'type'        => 'string',
+			'status'      => ( $translated !== $normalized ) ? 'FOUND' : 'NOT FOUND (Source returned)',
+			'lang'        => $language ?: 'Default',
+			'context'     => $context,
+			'path_raw'    => $name,
+			'path_stable' => $stable_name,
+			'source'      => $value,
+			'normalized'  => $normalized,
+			'translated'  => $translated,
 		) );
 
 		return $translated;
+	}
+
+	/**
+	 * Matches WPML String Translation internal behavior for paths > 160 characters.
+	 * WPML truncates at 147 chars and appends a "#" followed by a 12-char SHA1 hash.
+	 *
+	 * @param string $name
+	 * @return string
+	 */
+	private function get_stable_name( $name ) {
+		if ( strlen( $name ) <= 160 ) {
+			return $name;
+		}
+
+		$prefix = substr( $name, 0, 147 );
+		$hash   = substr( sha1( $name ), 0, 12 );
+
+		return $prefix . '#' . $hash;
 	}
 
 	/**
