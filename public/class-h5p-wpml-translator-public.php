@@ -52,20 +52,6 @@ class H5p_Wpml_Translator_Public {
 	private $translated_paths = array();
 
 	/**
-	 * Cache for legacy string values.
-	 *
-	 * @var array
-	 */
-	private $legacy_string_value_cache = array();
-
-	/**
-	 * Cached status for the WPML strings table.
-	 *
-	 * @var bool|null
-	 */
-	private $wpml_strings_table_exists = null;
-
-	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -389,8 +375,6 @@ class H5p_Wpml_Translator_Public {
 					$suffix = $index;
 					if ( is_object( $item ) && isset( $item->subContentId ) ) {
 						$suffix = 'subContentId:' . $item->subContentId;
-					} elseif ( is_array( $item ) && isset( $item['subContentId'] ) ) {
-						$suffix = 'subContentId:' . $item['subContentId'];
 					}
 
 					$item_path = $path . '[' . $suffix . ']';
@@ -576,8 +560,6 @@ class H5p_Wpml_Translator_Public {
 					$segment = '[' . $key . ']';
 					if ( is_object( $child ) && isset( $child->subContentId ) ) {
 						$segment = '[subContentId:' . $child->subContentId . ']';
-					} elseif ( is_array( $child ) && isset( $child['subContentId'] ) ) {
-						$segment = '[subContentId:' . $child['subContentId'] . ']';
 					}
 				} else {
 					$segment = '.' . $key;
@@ -1205,12 +1187,11 @@ class H5p_Wpml_Translator_Public {
 	 * @return string
 	 */
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
-		$normalized_name = $this->normalize_string_name( $name );
-		$this->mark_translated_path( $normalized_name );
+		$this->mark_translated_path( $name );
 		if ( $this->should_register_strings() ) {
-			$this->register_string( $context, $normalized_name, $value, $allow_html );
+			$this->register_string( $context, $name, $value, $allow_html );
 		}
-		return $this->translate_string( $value, $context, $normalized_name, $name );
+		return $this->translate_string( $value, $context, $name );
 	}
 
 	/**
@@ -1219,12 +1200,11 @@ class H5p_Wpml_Translator_Public {
 	 * @param string $path
 	 */
 	private function mark_translated_path( $path ) {
-		$normalized = $this->normalize_string_name( $path );
-		if ( '' === $normalized ) {
+		if ( ! is_string( $path ) || '' === $path ) {
 			return;
 		}
 
-		$this->translated_paths[ $normalized ] = true;
+		$this->translated_paths[ $path ] = true;
 	}
 
 	/**
@@ -1234,38 +1214,7 @@ class H5p_Wpml_Translator_Public {
 	 * @return bool
 	 */
 	private function is_path_translated( $path ) {
-		$normalized = $this->normalize_string_name( $path );
-		return '' !== $normalized && isset( $this->translated_paths[ $normalized ] );
-	}
-
-	/**
-	 * Normalize string names to avoid WPML truncation collisions.
-	 *
-	 * @param string $name
-	 * @return string
-	 */
-	private function normalize_string_name( $name ) {
-		if ( ! is_string( $name ) ) {
-			return '';
-		}
-
-		$name = trim( $name );
-		if ( '' === $name ) {
-			return '';
-		}
-
-		$max_length = 160;
-		if ( strlen( $name ) <= $max_length ) {
-			return $name;
-		}
-
-		$hash = substr( sha1( $name ), 0, 12 );
-		$prefix_length = $max_length - ( strlen( $hash ) + 1 );
-		if ( $prefix_length < 0 ) {
-			$prefix_length = 0;
-		}
-
-		return substr( $name, 0, $prefix_length ) . '#' . $hash;
+		return is_string( $path ) && isset( $this->translated_paths[ $path ] );
 	}
 
 	/**
@@ -1290,37 +1239,11 @@ class H5p_Wpml_Translator_Public {
 	 * @param string $value
 	 * @param string $context
 	 * @param string $name
-	 * @param string|null $original_name
 	 * @return string
 	 */
-	private function translate_string( $value, $context, $name, $original_name = null ) {
-		$language = $this->get_current_language();
-		$translated = $this->translate_string_for_name( $value, $context, $name, $language );
-
-		if ( $this->should_use_legacy_translation( $value, $translated, $name, $original_name, $language ) ) {
-			$legacy_name = $this->get_legacy_string_name( $original_name );
-			if ( $legacy_name && $legacy_name !== $name && $this->legacy_string_matches_value( $context, $legacy_name, $value ) ) {
-				$legacy_translation = $this->translate_string_for_name( $value, $context, $legacy_name, $language );
-				if ( $this->is_valid_legacy_translation( $value, $legacy_translation ) ) {
-					return $legacy_translation;
-				}
-			}
-		}
-
-		return $translated;
-	}
-
-	/**
-	 * Translate a string via WPML for a specific name.
-	 *
-	 * @param string      $value
-	 * @param string      $context
-	 * @param string      $name
-	 * @param string|null $language
-	 * @return string
-	 */
-	private function translate_string_for_name( $value, $context, $name, $language ) {
+	private function translate_string( $value, $context, $name ) {
 		if ( has_filter( 'wpml_translate_single_string' ) ) {
+			$language = $this->get_current_language();
 			$translated = $language
 				? apply_filters( 'wpml_translate_single_string', $value, $context, $name, $language )
 				: apply_filters( 'wpml_translate_single_string', $value, $context, $name );
@@ -1332,150 +1255,6 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		return $value;
-	}
-
-	/**
-	 * Determine if legacy translation lookup should run.
-	 *
-	 * @param string      $value
-	 * @param string      $translated
-	 * @param string      $name
-	 * @param string|null $original_name
-	 * @param string|null $language
-	 * @return bool
-	 */
-	private function should_use_legacy_translation( $value, $translated, $name, $original_name, $language ) {
-		if ( ! is_string( $original_name ) || '' === $original_name ) {
-			return false;
-		}
-
-		if ( $original_name === $name ) {
-			return false;
-		}
-
-		$default_language = $this->get_default_language();
-		if ( $default_language && $language && $language === $default_language ) {
-			return false;
-		}
-
-		return ( '' === $translated && '' !== $value ) || $translated === $value;
-	}
-
-	/**
-	 * Validate a legacy translation result.
-	 *
-	 * @param string $value
-	 * @param string $translated
-	 * @return bool
-	 */
-	private function is_valid_legacy_translation( $value, $translated ) {
-		if ( ! is_string( $translated ) ) {
-			return false;
-		}
-
-		if ( '' === $translated && '' !== $value ) {
-			return false;
-		}
-
-		return $translated !== $value;
-	}
-
-	/**
-	 * Confirm a legacy string maps to the same original value.
-	 *
-	 * @param string $context
-	 * @param string $name
-	 * @param string $value
-	 * @return bool
-	 */
-	private function legacy_string_matches_value( $context, $name, $value ) {
-		$stored = $this->get_legacy_string_value( $context, $name );
-		if ( null === $stored ) {
-			return false;
-		}
-
-		return (string) $stored === (string) $value;
-	}
-
-	/**
-	 * Load the original value stored for a legacy string.
-	 *
-	 * @param string $context
-	 * @param string $name
-	 * @return string|null
-	 */
-	private function get_legacy_string_value( $context, $name ) {
-		$cache_key = $context . '|' . $name;
-		if ( array_key_exists( $cache_key, $this->legacy_string_value_cache ) ) {
-			return $this->legacy_string_value_cache[ $cache_key ];
-		}
-
-		if ( ! $this->wpml_strings_table_exists() ) {
-			$this->legacy_string_value_cache[ $cache_key ] = null;
-			return null;
-		}
-
-		global $wpdb;
-		$table = $wpdb->prefix . 'icl_strings';
-		$stored = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT value FROM {$table} WHERE context = %s AND name = %s LIMIT 1",
-				$context,
-				$name
-			)
-		);
-
-		$this->legacy_string_value_cache[ $cache_key ] = $stored;
-
-		return $stored;
-	}
-
-	/**
-	 * Check whether the WPML strings table exists.
-	 *
-	 * @return bool
-	 */
-	private function wpml_strings_table_exists() {
-		if ( null !== $this->wpml_strings_table_exists ) {
-			return $this->wpml_strings_table_exists;
-		}
-
-		global $wpdb;
-		if ( ! $wpdb || empty( $wpdb->prefix ) ) {
-			$this->wpml_strings_table_exists = false;
-			return false;
-		}
-
-		$table = $wpdb->prefix . 'icl_strings';
-		$like = $wpdb->esc_like( $table );
-		$result = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
-		$this->wpml_strings_table_exists = ! empty( $result );
-
-		return $this->wpml_strings_table_exists;
-	}
-
-	/**
-	 * Get legacy string name for pre-hash registrations.
-	 *
-	 * @param string $name
-	 * @return string
-	 */
-	private function get_legacy_string_name( $name ) {
-		if ( ! is_string( $name ) ) {
-			return '';
-		}
-
-		$name = trim( $name );
-		if ( '' === $name ) {
-			return '';
-		}
-
-		$max_length = 160;
-		if ( strlen( $name ) <= $max_length ) {
-			return $name;
-		}
-
-		return substr( $name, 0, $max_length );
 	}
 
 	/**
