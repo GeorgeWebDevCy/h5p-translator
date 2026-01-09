@@ -117,6 +117,11 @@ class H5p_Wpml_Translator {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-h5p-wpml-translator-custom-css.php';
 
 		/**
+		 * Logger helper.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-h5p-wpml-translator-logger.php';
+
+		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-h5p-wpml-translator-admin.php';
@@ -160,8 +165,14 @@ class H5p_Wpml_Translator {
 
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'check_dependencies' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_custom_css_settings' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_logger_settings' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_custom_css_page' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_logger_page' );
 		$this->loader->add_action( 'admin_notices', $plugin_admin, 'render_dependency_notice' );
+
+		$this->loader->add_action( 'wp_ajax_h5p_wpml_fetch_logs', $plugin_admin, 'ajax_fetch_logs' );
+		$this->loader->add_action( 'wp_ajax_h5p_wpml_clear_logs', $plugin_admin, 'ajax_clear_logs' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 	}
 
 	/**

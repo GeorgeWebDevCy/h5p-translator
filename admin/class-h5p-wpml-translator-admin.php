@@ -77,6 +77,21 @@ class H5p_Wpml_Translator_Admin {
 	}
 
 	/**
+	 * Register settings for the live logger.
+	 */
+	public function register_logger_settings() {
+		register_setting(
+			'h5p_wpml_translator_logger_group',
+			H5p_Wpml_Translator_Logger::OPTION_ENABLED,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'no',
+			)
+		);
+	}
+
+	/**
 	 * Register the custom CSS settings page.
 	 */
 	public function register_custom_css_page() {
@@ -86,6 +101,19 @@ class H5p_Wpml_Translator_Admin {
 			'manage_options',
 			'h5p-wpml-translator-css',
 			array( $this, 'render_custom_css_page' )
+		);
+	}
+
+	/**
+	 * Register the live logger page.
+	 */
+	public function register_logger_page() {
+		add_options_page(
+			'H5P Translation Logs',
+			'H5P Live Logs',
+			'manage_options',
+			'h5p-wpml-translator-logs',
+			array( $this, 'render_logger_page' )
 		);
 	}
 
@@ -127,6 +155,73 @@ class H5p_Wpml_Translator_Admin {
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render the live logger page.
+	 */
+	public function render_logger_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'partials/h5p-wpml-translator-admin-logs-display.php';
+	}
+
+	/**
+	 * AJAX handler to fetch logs.
+	 */
+	public function ajax_fetch_logs() {
+		check_ajax_referer( 'h5p_wpml_logger_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Unauthorized' );
+		}
+
+		$logs = H5p_Wpml_Translator_Logger::get_logs();
+		wp_send_json_success( array( 'logs' => $logs ) );
+	}
+
+	/**
+	 * AJAX handler to clear logs.
+	 */
+	public function ajax_clear_logs() {
+		check_ajax_referer( 'h5p_wpml_logger_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Unauthorized' );
+		}
+
+		H5p_Wpml_Translator_Logger::clear_logs();
+		wp_send_json_success();
+	}
+
+	/**
+	 * Enqueue admin scripts.
+	 *
+	 * @param string $hook
+	 */
+	public function enqueue_scripts( $hook ) {
+		if ( 'settings_page_h5p-wpml-translator-logs' !== $hook ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			$this->plugin_name,
+			plugin_dir_url( __FILE__ ) . 'js/h5p-wpml-translator-admin.js',
+			array( 'jquery' ),
+			$this->version,
+			false
+		);
+
+		wp_localize_script(
+			$this->plugin_name,
+			'h5pTranslatorAdmin',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'h5p_wpml_logger_nonce' ),
+			)
+		);
 	}
 
 	/**

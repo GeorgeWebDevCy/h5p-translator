@@ -91,9 +91,18 @@ class H5p_Wpml_Translator_Public {
 		$context = $content_id ? 'H5P Content ' . $content_id : 'H5P Content';
 		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
 
+		$language = $this->get_current_language();
+		H5p_Wpml_Translator_Logger::log( sprintf( 
+			"--- Translation Start: %s (Content ID: %s, Lang: %s) ---", 
+			$library_name, 
+			$content_id ?: 'Unknown',
+			$language ?: 'Default'
+		) );
+
 		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
 		if ( empty( $semantics ) || ! is_array( $semantics ) ) {
 			if ( $this->should_use_text_fallback( $library_name ) ) {
+				H5p_Wpml_Translator_Logger::log( "Starting text fallback for library: " . $library_name );
 				$this->translate_text_fallback( $parameters, $context, $path_prefix );
 			}
 			$this->translate_media_fallback( $parameters, $content_id, $core );
@@ -102,6 +111,7 @@ class H5p_Wpml_Translator_Public {
 
 		$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
 		if ( $this->should_use_text_fallback( $library_name ) ) {
+			H5p_Wpml_Translator_Logger::log( "Starting text fallback for library: " . $library_name );
 			$this->translate_text_fallback( $parameters, $context, $path_prefix );
 		}
 		$this->translate_media_fallback( $parameters, $content_id, $core );
@@ -692,11 +702,21 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		$translated_id = $this->get_translated_attachment_id( $attachment_id );
-		if ( ! $translated_id || $translated_id === $attachment_id ) {
-			return;
+		$status = ( $translated_id && $translated_id !== $attachment_id ) ? 'FOUND' : 'NOT FOUND';
+		
+		$translated_url = null;
+		if ( 'FOUND' === $status ) {
+			$translated_url = wp_get_attachment_url( $translated_id );
 		}
 
-		$translated_url = wp_get_attachment_url( $translated_id );
+		H5p_Wpml_Translator_Logger::log( array(
+			'type'           => 'media',
+			'status'         => $status,
+			'source_path'    => $path,
+			'source_url'     => $normalized_url,
+			'translated_url' => $translated_url ?: $url,
+		) );
+
 		if ( ! $translated_url ) {
 			return;
 		}
@@ -1200,7 +1220,21 @@ class H5p_Wpml_Translator_Public {
 		if ( $this->should_register_strings() ) {
 			$this->register_string( $context, $name, $value, $allow_html );
 		}
-		return $this->translate_string( $value, $context, $name );
+		
+		$translated = $this->translate_string( $value, $context, $name );
+		$language   = $this->get_current_language();
+
+		H5p_Wpml_Translator_Logger::log( array(
+			'type'       => 'string',
+			'status'     => ( $translated !== $value ) ? 'FOUND' : 'NOT FOUND (Source returned)',
+			'lang'       => $language ?: 'Default',
+			'context'    => $context,
+			'path'       => $name,
+			'source'     => $value,
+			'translated' => $translated,
+		) );
+
+		return $translated;
 	}
 
 	/**

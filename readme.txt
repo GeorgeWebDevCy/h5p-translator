@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.19
+Stable tag: 1.2.20
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,14 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
+= 1.2.21 =
+* Enhance H5P Live Logs with detailed status for each translation attempt (FOUND/NOT FOUND).
+* Log detected language and content IDs for better correlation.
+
+= 1.2.20 =
+* Add H5P Live Logs diagnostic page to monitor translation events.
+* Toggle logging on/off and clear logs from the admin area.
+
 = 1.2.19 =
 * Fix GameMap activity questions and answers not shown on frontend after translated.
 * Improve language detection from URL query parameters in iframe/AJAX requests.
@@ -130,6 +138,12 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.21 =
+Enhance H5P Live Logs with detailed status for each translation attempt.
+
+= 1.2.20 =
+Add H5P Live Logs diagnostic page to monitor translation events.
 
 = 1.2.19 =
 Fix GameMap activity questions and answers not shown on frontend after translated.
