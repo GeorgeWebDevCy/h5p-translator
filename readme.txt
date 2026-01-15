@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.26
+Stable tag: 1.2.20
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,7 +40,7 @@ installed and active.
 1. Install and activate the H5P plugin.
 2. Install and activate WPML and WPML String Translation.
 3. Upload this plugin to `/wp-content/plugins/` and activate it.
-4. Visit a page that renders an H5P item to register its strings.
+4. Open Settings -> H5P String Registration and register strings (default WPML language).
 5. Translate strings under WPML -> String Translation (context: `H5P Content {id}`).
 
 == Frequently Asked Questions ==
@@ -51,8 +51,8 @@ Open WPML -> String Translation and filter by context `H5P Content {id}`.
 
 = I do not see any strings. What should I check? =
 
-Make sure the H5P item is rendered at least once, WPML String Translation is
-active, and caches are cleared. Re-open the page to trigger registration again.
+Make sure you run Settings -> H5P String Registration, WPML String Translation
+is active, and caches are cleared.
 
 = Does this modify the stored H5P content? =
 
@@ -68,9 +68,6 @@ No. Only content authoring strings are translated.
 2. Translated H5P content rendered on the frontend.
 
 == Changelog ==
-
-= 1.2.26 =
-* Revert codebase to commit 61bb7b2 and bump version.
 
 = 1.2.25 =
 * Final production release including all recent stability fixes for deep-nested H5P content.
@@ -159,9 +156,6 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
-
-= 1.2.26 =
-Revert codebase to commit 61bb7b2 and bump version.
 
 = 1.2.25 =
 Final stability fixes for deep-nested H5P content.
