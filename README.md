@@ -40,7 +40,7 @@ Then activate the plugin as usual.
 
 ## Usage
 
-1. Open Settings -> H5P String Registration and register strings (default WPML language).
+1. Render any H5P content once (frontend or embed). This registers strings.
 2. Go to WPML -> String Translation.
 3. Filter by context `H5P Content {id}` and add translations.
 4. Reload the page to see translated content.
@@ -52,9 +52,9 @@ Open Settings -> H5P Custom CSS to add CSS that should load inside H5P iframes.
 ### Media Translation for Images
 
 When WPML Media Translation is enabled, H5P image fields (such as backgrounds)
-are matched to attachments so you can translate them per language. Use Settings
--> H5P String Registration (or edit the H5P content as an admin) to register
-the images, then use WPML -> Media Translation to provide localized files.
+are matched to attachments so you can translate them per language. Visit or
+edit the H5P content as an admin once to register the images, then use WPML ->
+Media Translation to provide localized files.
 
 ## Update Mechanism
 
@@ -70,7 +70,7 @@ When releasing, keep the plugin header version in
 
 - Only authoring strings are translated; user answers/state are not.
 - Library UI strings are handled by H5P language packs, not this plugin.
-- Strings appear in WPML only after running H5P String Registration.
+- Strings appear in WPML only after the content is rendered at least once.
 
 ## Repository Layout
 

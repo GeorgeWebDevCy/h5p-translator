@@ -52,13 +52,6 @@ class H5p_Wpml_Translator_Public {
 	private $translated_paths = array();
 
 	/**
-	 * Allow string registration only when explicitly triggered.
-	 *
-	 * @var bool
-	 */
-	private $registration_enabled = false;
-
-	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -187,33 +180,6 @@ class H5p_Wpml_Translator_Public {
 	}
 
 	/**
-	 * Register strings for a specific H5P content id.
-	 *
-	 * @param int $content_id
-	 * @return bool
-	 */
-	public function register_strings_for_content_id( $content_id ) {
-		$content_id = (int) $content_id;
-		if ( $content_id < 1 ) {
-			return false;
-		}
-
-		$previous = $this->registration_enabled;
-		$this->registration_enabled = true;
-
-		if ( ! $this->should_register_strings() ) {
-			$this->registration_enabled = $previous;
-			return false;
-		}
-
-		$result = $this->sync_media_for_content_id( $content_id );
-
-		$this->registration_enabled = $previous;
-
-		return $result;
-	}
-
-	/**
 	 * Get the H5P core instance.
 	 *
 	 * @return H5PCore|null
@@ -263,33 +229,33 @@ class H5p_Wpml_Translator_Public {
 	 */
 	private function sync_media_for_content_id( $content_id ) {
 		if ( ! $this->is_wpml_active() || ! class_exists( 'H5P_Plugin' ) ) {
-			return false;
+			return;
 		}
 
 		$plugin = H5P_Plugin::get_instance();
 		if ( ! $plugin || ! method_exists( $plugin, 'get_content' ) ) {
-			return false;
+			return;
 		}
 
 		$content = $plugin->get_content( $content_id );
 		if ( ! is_array( $content ) || empty( $content['params'] ) ) {
-			return false;
+			return;
 		}
 
 		$parameters = json_decode( $content['params'] );
 		if ( ! is_object( $parameters ) && ! is_array( $parameters ) ) {
-			return false;
+			return;
 		}
 
 		$core = $this->get_h5p_core();
 		if ( ! $core ) {
-			return false;
+			return;
 		}
 
 		$this->translated_paths = array();
 
 		if ( empty( $content['libraryName'] ) || ! isset( $content['libraryMajorVersion'], $content['libraryMinorVersion'] ) ) {
-			return false;
+			return;
 		}
 
 		$library_name = (string) $content['libraryName'];
@@ -309,7 +275,6 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		$this->translate_media_fallback( $parameters, $content_id, $core );
-		return true;
 	}
 
 	/**
@@ -1123,10 +1088,6 @@ class H5p_Wpml_Translator_Public {
 	 * @return bool
 	 */
 	private function should_register_strings() {
-		if ( ! $this->registration_enabled ) {
-			return false;
-		}
-
 		if ( ! $this->is_wpml_active() ) {
 			return true;
 		}

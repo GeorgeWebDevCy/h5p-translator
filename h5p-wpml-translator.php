@@ -16,15 +16,7 @@
  * Plugin Name:       H5P WPML Translator
  * Plugin URI:        https://www.georgenicolaou.me/h5p-wpml-translator
  * Description:       Make H5P content translatable with WPML String Translation.
-<<<<<<< HEAD
- * Version:           2.0.0
-=======
-<<<<<<< HEAD
- * Version:           1.2.26
-=======
- * Version:           1.2.27
->>>>>>> 96f8be3ab297a4f799d5972353491d343f6e56d7
->>>>>>> 0ab8770fefccae4e336295337777f3137ab9a8b0
+ * Version:           1.2.25
  * Author:            George Nicolaou
  * Author URI:        https://www.georgenicolaou.me
  * License:           GPL-2.0+
@@ -43,15 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-<<<<<<< HEAD
-define( 'H5P_WPML_TRANSLATOR_VERSION', '2.0.0' );
-=======
-<<<<<<< HEAD
-define( 'H5P_WPML_TRANSLATOR_VERSION', '1.2.26' );
-=======
-define( 'H5P_WPML_TRANSLATOR_VERSION', '1.2.27' );
->>>>>>> 96f8be3ab297a4f799d5972353491d343f6e56d7
->>>>>>> 0ab8770fefccae4e336295337777f3137ab9a8b0
+define( 'H5P_WPML_TRANSLATOR_VERSION', '1.2.25' );
 define( 'H5P_WPML_TRANSLATOR_PLUGIN_FILE', __FILE__ );
 
 /**
