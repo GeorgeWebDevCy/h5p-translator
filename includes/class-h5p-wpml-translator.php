@@ -189,8 +189,6 @@ class H5p_Wpml_Translator {
 		$this->loader->add_action( 'h5p_alter_filtered_parameters', $plugin_public, 'translate_parameters', 10, 4 );
 		$this->loader->add_action( 'h5p_alter_library_styles', $plugin_public, 'add_custom_css_styles', 10, 3 );
 		$this->loader->add_action( 'admin_init', $plugin_public, 'maybe_sync_media_on_h5p_edit' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_h5p_guard_script', 20, 1 );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_public, 'enqueue_h5p_guard_script', 20, 1 );
 
 	}
 

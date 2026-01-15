@@ -52,13 +52,6 @@ class H5p_Wpml_Translator_Public {
 	private $translated_paths = array();
 
 	/**
-	 * Track whether the H5P init guard has been added.
-	 *
-	 * @var bool
-	 */
-	private $guard_script_added = false;
-
-	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -68,64 +61,6 @@ class H5p_Wpml_Translator_Public {
 	public function __construct( $plugin_name, $version ) {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-	}
-
-	/**
-	 * Add a guard to suppress H5P init errors when a runnable fails to initialize.
-	 *
-	 * @param string $hook
-	 */
-	public function enqueue_h5p_guard_script( $hook = '' ) {
-		if ( $this->guard_script_added ) {
-			return;
-		}
-
-		if ( ! function_exists( 'wp_scripts' ) || ! function_exists( 'wp_add_inline_script' ) ) {
-			return;
-		}
-
-		$scripts = wp_scripts();
-		if ( ! $scripts || empty( $scripts->registered ) ) {
-			return;
-		}
-
-		$needle = 'h5p-php-library/js/h5p';
-		foreach ( $scripts->registered as $handle => $script ) {
-			if ( empty( $script->src ) || false === strpos( $script->src, $needle ) ) {
-				continue;
-			}
-
-			$inline = <<<'JS'
-(function() {
-	if ( ! window.H5P || typeof window.H5P.init !== 'function' ) {
-		return;
-	}
-	if ( window.H5P.__wpmlInitGuard ) {
-		return;
-	}
-	window.H5P.__wpmlInitGuard = true;
-	var originalInit = window.H5P.init;
-	window.H5P.init = function() {
-		try {
-			return originalInit.apply( this, arguments );
-		} catch ( err ) {
-			var message = err && err.message ? err.message : '';
-			if ( message.indexOf( "reading 'on'" ) !== -1 || message.indexOf( 'reading "on"' ) !== -1 ) {
-				if ( window.console && typeof window.console.warn === 'function' ) {
-					window.console.warn( 'H5P init suppressed error', err );
-				}
-				return false;
-			}
-			throw err;
-		}
-	};
-})();
-JS;
-
-			wp_add_inline_script( $handle, $inline, 'after' );
-			$this->guard_script_added = true;
-			break;
-		}
 	}
 
 	/**
@@ -1312,55 +1247,29 @@ JS;
 	private function register_and_translate( $value, $context, $name, $allow_html ) {
 		$this->mark_translated_path( $name );
 
-		// Normalize string before registration/translation:
-		// 1. Decode HTML entities.
-		// 2. Convert non-breaking spaces (\xA0) to regular spaces.
-		// 3. Trim whitespace.
-		$normalized = html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-		$normalized = str_replace( "\xA0", ' ', $normalized );
-		$normalized = trim( $normalized );
+		// Normalize string before registration/translation.
+		// Use html_entity_decode to handle &nbsp; and other entities from H5P.
+		$normalized = trim( html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
 		
-		// Ensure name is stable and matches WPML's internal hashing logic for strings > 160 chars.
-		$stable_name = $this->get_stable_name( $name );
-
 		if ( $this->should_register_strings() ) {
-			$this->register_string( $context, $stable_name, $normalized, $allow_html );
+			$this->register_string( $context, $name, $normalized, $allow_html );
 		}
 		
-		$translated = $this->translate_string( $normalized, $context, $stable_name );
+		$translated = $this->translate_string( $normalized, $context, $name );
 		$language   = $this->get_current_language();
 
 		H5p_Wpml_Translator_Logger::log( array(
-			'type'        => 'string',
-			'status'      => ( $translated !== $normalized ) ? 'FOUND' : 'NOT FOUND (Source returned)',
-			'lang'        => $language ?: 'Default',
-			'context'     => $context,
-			'path_raw'    => $name,
-			'path_stable' => $stable_name,
-			'source'      => $value,
-			'normalized'  => $normalized,
-			'translated'  => $translated,
+			'type'       => 'string',
+			'status'     => ( $translated !== $normalized ) ? 'FOUND' : 'NOT FOUND (Source returned)',
+			'lang'       => $language ?: 'Default',
+			'context'    => $context,
+			'path'       => $name,
+			'source'     => $value,
+			'normalized' => $normalized,
+			'translated' => $translated,
 		) );
 
 		return $translated;
-	}
-
-	/**
-	 * Matches WPML String Translation internal behavior for paths > 160 characters.
-	 * WPML truncates at 147 chars and appends a "#" followed by a 12-char SHA1 hash.
-	 *
-	 * @param string $name
-	 * @return string
-	 */
-	private function get_stable_name( $name ) {
-		if ( strlen( $name ) <= 160 ) {
-			return $name;
-		}
-
-		$prefix = substr( $name, 0, 147 );
-		$hash   = substr( sha1( $name ), 0, 12 );
-
-		return $prefix . '#' . $hash;
 	}
 
 	/**

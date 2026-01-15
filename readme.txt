@@ -5,7 +5,7 @@ Tags: h5p, wpml, translation, multilingual, string-translation, interactive-cont
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.26
+Stable tag: 1.2.20
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,22 +68,6 @@ No. Only content authoring strings are translated.
 2. Translated H5P content rendered on the frontend.
 
 == Changelog ==
-
-= 1.2.26 =
-* Suppress H5P init JS errors when a runnable fails to initialize.
-
-= 1.2.25 =
-* Final production release including all recent stability fixes for deep-nested H5P content.
-
-= 1.2.24 =
-* Align string hashing logic with WPML's internal SHA1-based algorithm for strings > 160 characters.
-* Restore full path identifiers to ensure compatibility with existing translations.
-* Enhance whitespace normalization to handle non-breaking spaces during translation matching.
-
-= 1.2.23 =
-* Implement stable paths using subContentId as root to keep string names short.
-* Add deterministic hashing (#hash) for string names exceeding 160 characters.
-* Improve logger to show both raw paths and stable names used for translation.
 
 = 1.2.22 =
 * Fix media translation failure for guest users by relaxing capability checks.
@@ -159,18 +143,6 @@ No. Only content authoring strings are translated.
 * Initial release.
 
 == Upgrade Notice ==
-
-= 1.2.26 =
-Suppress H5P init JS errors when a runnable fails to initialize.
-
-= 1.2.25 =
-Final stability fixes for deep-nested H5P content.
-
-= 1.2.24 =
-Sync string hashing with WPML internal logic to restore existing translations.
-
-= 1.2.23 =
-Critical fix for deep-nested H5P content translation stability.
 
 = 1.2.22 =
 Fix media translation for guest users and improve string matching.
