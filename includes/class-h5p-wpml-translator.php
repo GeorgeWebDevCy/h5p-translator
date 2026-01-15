@@ -168,8 +168,10 @@ class H5p_Wpml_Translator {
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_logger_settings' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_custom_css_page' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_logger_page' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_string_registration_page' );
 		$this->loader->add_action( 'admin_notices', $plugin_admin, 'render_dependency_notice' );
 
+		$this->loader->add_action( 'admin_post_h5p_wpml_register_strings', $plugin_admin, 'handle_register_strings_action' );
 		$this->loader->add_action( 'wp_ajax_h5p_wpml_fetch_logs', $plugin_admin, 'ajax_fetch_logs' );
 		$this->loader->add_action( 'wp_ajax_h5p_wpml_clear_logs', $plugin_admin, 'ajax_clear_logs' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
