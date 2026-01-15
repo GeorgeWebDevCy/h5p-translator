@@ -1,11 +1,11 @@
-=== H5P WPML Translator ===
+﻿=== H5P WPML Translator ===
 Contributors: orionaselite
 Donate link: 
 Tags: h5p, wpml, translation, multilingual, string-translation, interactive-content
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,12 +69,24 @@ No. Only content authoring strings are translated.
 
 == Changelog ==
 
-= 2.0.1 =
-* Use subContentId-based stable string paths with deterministic hashing for long names.
-* Log raw paths alongside stable translation keys for easier debugging.
+= 2.0.2 =
+* Bump version.
 
-= 2.0.0 =
-* Suppress H5P init JS errors when a runnable fails to initialize.
+= 1.2.26 =
+* Preserve non-breaking spaces by removing whitespace normalization during string matching.
+
+= 1.2.25 =
+* Final production release including all recent stability fixes for deep-nested H5P content.
+
+= 1.2.24 =
+* Align string hashing logic with WPML's internal SHA1-based algorithm for strings > 160 characters.
+* Restore full path identifiers to ensure compatibility with existing translations.
+* Enhance whitespace normalization to handle non-breaking spaces during translation matching.
+
+= 1.2.23 =
+* Implement stable paths using subContentId as root to keep string names short.
+* Add deterministic hashing (#hash) for string names exceeding 160 characters.
+* Improve logger to show both raw paths and stable names used for translation.
 
 = 1.2.22 =
 * Fix media translation failure for guest users by relaxing capability checks.
@@ -151,11 +163,20 @@ No. Only content authoring strings are translated.
 
 == Upgrade Notice ==
 
-= 2.0.1 =
-Use stable subContentId-based string keys and log raw/stable paths.
+= 2.0.2 =
+Bump version.
 
-= 2.0.0 =
-Suppress H5P init JS errors when a runnable fails to initialize.
+= 1.2.26 =
+Preserve non-breaking spaces during string matching.
+
+= 1.2.25 =
+Final stability fixes for deep-nested H5P content.
+
+= 1.2.24 =
+Sync string hashing with WPML internal logic to restore existing translations.
+
+= 1.2.23 =
+Critical fix for deep-nested H5P content translation stability.
 
 = 1.2.22 =
 Fix media translation for guest users and improve string matching.
