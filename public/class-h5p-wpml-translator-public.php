@@ -12,6 +12,9 @@
 
 class H5p_Wpml_Translator_Public {
 
+	private const STRING_NAME_MAX_LENGTH = 160;
+	private const STRING_NAME_HASH_LENGTH = 12;
+
 	/**
 	 * The ID of this plugin.
 	 *
@@ -89,7 +92,8 @@ class H5p_Wpml_Translator_Public {
 
 		$content_id = $this->resolve_content_id();
 		$context = $content_id ? 'H5P Content ' . $content_id : 'H5P Content';
-		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+		$raw_path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+		$stable_path_prefix = $this->get_stable_root_path( $parameters, $raw_path_prefix );
 
 		$language = $this->get_current_language();
 		H5p_Wpml_Translator_Logger::log( sprintf( 
@@ -103,16 +107,16 @@ class H5p_Wpml_Translator_Public {
 		if ( empty( $semantics ) || ! is_array( $semantics ) ) {
 			if ( $this->should_use_text_fallback( $library_name ) ) {
 				H5p_Wpml_Translator_Logger::log( "Starting text fallback for library: " . $library_name );
-				$this->translate_text_fallback( $parameters, $context, $path_prefix );
+				$this->translate_text_fallback( $parameters, $context, $raw_path_prefix, $stable_path_prefix );
 			}
 			$this->translate_media_fallback( $parameters, $content_id, $core );
 			return;
 		}
 
-		$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
+		$this->translate_fields( $parameters, $semantics, $context, $raw_path_prefix, $stable_path_prefix, $core, $content_id );
 		if ( $this->should_use_text_fallback( $library_name ) ) {
 			H5p_Wpml_Translator_Logger::log( "Starting text fallback for library: " . $library_name );
-			$this->translate_text_fallback( $parameters, $context, $path_prefix );
+			$this->translate_text_fallback( $parameters, $context, $raw_path_prefix, $stable_path_prefix );
 		}
 		$this->translate_media_fallback( $parameters, $content_id, $core );
 	}
@@ -264,14 +268,15 @@ class H5p_Wpml_Translator_Public {
 
 		$semantics = $this->get_semantics( $core, $library_name, $major_version, $minor_version );
 		$context = 'H5P Content ' . $content_id;
-		$path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+		$raw_path_prefix = $library_name . ' ' . $major_version . '.' . $minor_version;
+		$stable_path_prefix = $this->get_stable_root_path( $parameters, $raw_path_prefix );
 
 		if ( ! empty( $semantics ) && is_array( $semantics ) ) {
-			$this->translate_fields( $parameters, $semantics, $context, $path_prefix, $core, $content_id );
+			$this->translate_fields( $parameters, $semantics, $context, $raw_path_prefix, $stable_path_prefix, $core, $content_id );
 		}
 
 		if ( $this->should_use_text_fallback( $library_name ) ) {
-			$this->translate_text_fallback( $parameters, $context, $path_prefix );
+			$this->translate_text_fallback( $parameters, $context, $raw_path_prefix, $stable_path_prefix );
 		}
 
 		$this->translate_media_fallback( $parameters, $content_id, $core );
@@ -304,11 +309,12 @@ class H5p_Wpml_Translator_Public {
 	 * @param mixed  $params
 	 * @param array  $fields
 	 * @param string $context
-	 * @param string $path_prefix
+	 * @param string $raw_path_prefix
+	 * @param string $stable_path_prefix
 	 * @param H5PCore $core
 	 * @param int|null $content_id
 	 */
-	private function translate_fields( &$params, $fields, $context, $path_prefix, $core, $content_id ) {
+	private function translate_fields( &$params, $fields, $context, $raw_path_prefix, $stable_path_prefix, $core, $content_id ) {
 		if ( ! is_array( $fields ) ) {
 			return;
 		}
@@ -327,8 +333,9 @@ class H5p_Wpml_Translator_Public {
 				continue;
 			}
 
-			$path = $path_prefix ? $path_prefix . '.' . $field_name : $field_name;
-			$this->translate_field( $value, $field, $context, $path, $core, $content_id );
+			$raw_path = $raw_path_prefix ? $raw_path_prefix . '.' . $field_name : $field_name;
+			$stable_path = $stable_path_prefix ? $stable_path_prefix . '.' . $field_name : $field_name;
+			$this->translate_field( $value, $field, $context, $raw_path, $stable_path, $core, $content_id );
 		}
 	}
 
@@ -338,11 +345,12 @@ class H5p_Wpml_Translator_Public {
 	 * @param mixed  $value
 	 * @param object $field
 	 * @param string $context
-	 * @param string $path
+	 * @param string $raw_path
+	 * @param string $stable_path
 	 * @param H5PCore $core
 	 * @param int|null $content_id
 	 */
-	private function translate_field( &$value, $field, $context, $path, $core, $content_id ) {
+	private function translate_field( &$value, $field, $context, $raw_path, $stable_path, $core, $content_id ) {
 		if ( empty( $field->type ) ) {
 			return;
 		}
@@ -356,7 +364,7 @@ class H5p_Wpml_Translator_Public {
 					if ( ! $allow_html && false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) ) {
 						$allow_html = true;
 					}
-					$value = $this->register_and_translate( $value, $context, $path, $allow_html );
+					$value = $this->register_and_translate( $value, $context, $raw_path, $stable_path, $allow_html );
 				}
 				return;
 
@@ -372,7 +380,11 @@ class H5p_Wpml_Translator_Public {
 
 			case 'group':
 				if ( isset( $field->fields ) && ( is_array( $value ) || is_object( $value ) ) ) {
-					$this->translate_fields( $value, $field->fields, $context, $path, $core, $content_id );
+					$group_stable_path = $this->get_subcontent_root( $value );
+					if ( ! $group_stable_path ) {
+						$group_stable_path = $stable_path;
+					}
+					$this->translate_fields( $value, $field->fields, $context, $raw_path, $group_stable_path, $core, $content_id );
 				}
 				return;
 
@@ -383,12 +395,17 @@ class H5p_Wpml_Translator_Public {
 
 				foreach ( $value as $index => &$item ) {
 					$suffix = $index;
-					if ( is_object( $item ) && isset( $item->subContentId ) ) {
-						$suffix = 'subContentId:' . $item->subContentId;
+					$sub_id = $this->get_subcontent_id( $item );
+					if ( $sub_id ) {
+						$suffix = 'subContentId:' . $sub_id;
 					}
 
-					$item_path = $path . '[' . $suffix . ']';
-					$this->translate_field( $item, $field->field, $context, $item_path, $core, $content_id );
+					$item_raw_path = $raw_path . '[' . $suffix . ']';
+					$item_stable_path = $this->get_subcontent_root( $item );
+					if ( ! $item_stable_path ) {
+						$item_stable_path = $stable_path ? $stable_path . '[' . $index . ']' : '[' . $index . ']';
+					}
+					$this->translate_field( $item, $field->field, $context, $item_raw_path, $item_stable_path, $core, $content_id );
 				}
 				unset( $item );
 				return;
@@ -414,7 +431,7 @@ class H5p_Wpml_Translator_Public {
 					return;
 				}
 
-				$nested_path = $path . '.library[' . $library['key'] . ']';
+				$nested_raw_path = $raw_path . '.library[' . $library['key'] . ']';
 				$params_value = null;
 				if ( is_object( $value ) && isset( $value->params ) ) {
 					$params_value = &$value->params;
@@ -426,23 +443,35 @@ class H5p_Wpml_Translator_Public {
 					return;
 				}
 
+				$nested_stable_path = $this->get_subcontent_root( $value );
+				if ( ! $nested_stable_path ) {
+					$nested_stable_path = $this->get_subcontent_root( $params_value );
+				}
+				if ( ! $nested_stable_path ) {
+					$nested_stable_path = $stable_path ? $stable_path . '.library[' . $library['key'] . ']' : 'library[' . $library['key'] . ']';
+				}
+
 				$semantics = $this->get_semantics( $core, $library['name'], $library['major'], $library['minor'] );
 				if ( empty( $semantics ) || ! is_array( $semantics ) ) {
 					if ( $this->should_use_text_fallback( $library['name'] ) ) {
-						$this->translate_text_fallback( $params_value, $context, $nested_path );
+						$this->translate_text_fallback( $params_value, $context, $nested_raw_path, $nested_stable_path );
 					}
 					return;
 				}
 
-				$this->translate_fields( $params_value, $semantics, $context, $nested_path, $core, $content_id );
+				$this->translate_fields( $params_value, $semantics, $context, $nested_raw_path, $nested_stable_path, $core, $content_id );
 				if ( $this->should_use_text_fallback( $library['name'] ) ) {
-					$this->translate_text_fallback( $params_value, $context, $nested_path );
+					$this->translate_text_fallback( $params_value, $context, $nested_raw_path, $nested_stable_path );
 				}
 				return;
 
 			default:
 				if ( isset( $field->fields ) ) {
-					$this->translate_fields( $value, $field->fields, $context, $path, $core, $content_id );
+					$nested_stable_path = $this->get_subcontent_root( $value );
+					if ( ! $nested_stable_path ) {
+						$nested_stable_path = $stable_path;
+					}
+					$this->translate_fields( $value, $field->fields, $context, $raw_path, $nested_stable_path, $core, $content_id );
 				}
 				return;
 		}
@@ -523,10 +552,11 @@ class H5p_Wpml_Translator_Public {
 	 *
 	 * @param mixed  $value
 	 * @param string $context
-	 * @param string $path
+	 * @param string $raw_path
+	 * @param string $stable_path
 	 * @param int    $depth
 	 */
-	private function translate_text_fallback( &$value, $context, $path, $depth = 0 ) {
+	private function translate_text_fallback( &$value, $context, $raw_path, $stable_path, $depth = 0 ) {
 		if ( $depth > 20 ) {
 			return;
 		}
@@ -536,16 +566,17 @@ class H5p_Wpml_Translator_Public {
 				return;
 			}
 
-			if ( $this->is_path_translated( $path ) ) {
+			$translation_name = $this->get_translation_name( $stable_path, $raw_path );
+			if ( '' !== $translation_name && $this->is_path_translated( $translation_name ) ) {
 				return;
 			}
 
-			if ( $this->should_skip_fallback_string( $value, $path ) ) {
+			if ( $this->should_skip_fallback_string( $value, $raw_path ) ) {
 				return;
 			}
 
 			$allow_html = ( false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) );
-			$value = $this->register_and_translate( $value, $context, $path, $allow_html );
+			$value = $this->register_and_translate( $value, $context, $raw_path, $stable_path, $allow_html );
 			return;
 		}
 
@@ -555,13 +586,25 @@ class H5p_Wpml_Translator_Public {
 				$library = $this->parse_library_string( $value->library );
 			}
 
+			$stable_base = $this->get_subcontent_root( $value );
+			if ( ! $stable_base ) {
+				$stable_base = $stable_path;
+			}
+			$use_stable_root = is_string( $stable_base ) && 0 === strpos( $stable_base, 'subContentId:' );
+
 			foreach ( get_object_vars( $value ) as $key => &$child ) {
 				if ( 'params' === $key && $library ) {
-					$child_path = $path ? $path . '.library[' . $library['key'] . ']' : 'library[' . $library['key'] . ']';
+					$raw_child_path = $raw_path ? $raw_path . '.library[' . $library['key'] . ']' : 'library[' . $library['key'] . ']';
+					if ( $use_stable_root ) {
+						$stable_child_path = $stable_base;
+					} else {
+						$stable_child_path = $stable_path ? $stable_path . '.library[' . $library['key'] . ']' : 'library[' . $library['key'] . ']';
+					}
 				} else {
-					$child_path = $path ? $path . '.' . $key : $key;
+					$raw_child_path = $raw_path ? $raw_path . '.' . $key : $key;
+					$stable_child_path = $stable_base ? $stable_base . '.' . $key : $key;
 				}
-				$this->translate_text_fallback( $child, $context, $child_path, $depth + 1 );
+				$this->translate_text_fallback( $child, $context, $raw_child_path, $stable_child_path, $depth + 1 );
 			}
 			unset( $child );
 			return;
@@ -571,14 +614,22 @@ class H5p_Wpml_Translator_Public {
 			foreach ( $value as $key => &$child ) {
 				if ( is_int( $key ) ) {
 					$segment = '[' . $key . ']';
-					if ( is_object( $child ) && isset( $child->subContentId ) ) {
-						$segment = '[subContentId:' . $child->subContentId . ']';
+					$sub_id = $this->get_subcontent_id( $child );
+					if ( $sub_id ) {
+						$segment = '[subContentId:' . $sub_id . ']';
 					}
 				} else {
 					$segment = '.' . $key;
 				}
-				$child_path = $path ? $path . $segment : ltrim( $segment, '.' );
-				$this->translate_text_fallback( $child, $context, $child_path, $depth + 1 );
+				$raw_child_path = $raw_path ? $raw_path . $segment : ltrim( $segment, '.' );
+
+				$stable_child_path = $this->get_subcontent_root( $child );
+				if ( ! $stable_child_path ) {
+					$stable_segment = is_int( $key ) ? '[' . $key . ']' : '.' . $key;
+					$stable_child_path = $stable_path ? $stable_path . $stable_segment : ltrim( $stable_segment, '.' );
+				}
+
+				$this->translate_text_fallback( $child, $context, $raw_child_path, $stable_child_path, $depth + 1 );
 			}
 			unset( $child );
 		}
@@ -692,6 +743,93 @@ class H5p_Wpml_Translator_Public {
 		}
 
 		return substr( $clean, $pos + 1 );
+	}
+
+	/**
+	 * Get subcontent ID from a value when available.
+	 *
+	 * @param mixed $value
+	 * @return string|null
+	 */
+	private function get_subcontent_id( $value ) {
+		if ( is_object( $value ) && isset( $value->subContentId ) ) {
+			$sub_id = trim( (string) $value->subContentId );
+			return '' !== $sub_id ? $sub_id : null;
+		}
+
+		if ( is_array( $value ) && array_key_exists( 'subContentId', $value ) ) {
+			$sub_id = trim( (string) $value['subContentId'] );
+			return '' !== $sub_id ? $sub_id : null;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Build a stable root path for a subcontent node.
+	 *
+	 * @param mixed $value
+	 * @return string|null
+	 */
+	private function get_subcontent_root( $value ) {
+		$sub_id = $this->get_subcontent_id( $value );
+		if ( ! $sub_id ) {
+			return null;
+		}
+
+		return 'subContentId:' . $sub_id;
+	}
+
+	/**
+	 * Get the stable path prefix, falling back to the provided path.
+	 *
+	 * @param mixed  $value
+	 * @param string $fallback
+	 * @return string
+	 */
+	private function get_stable_root_path( $value, $fallback ) {
+		$root = $this->get_subcontent_root( $value );
+		return $root ? $root : $fallback;
+	}
+
+	/**
+	 * Get a stable translation name with hashing for long paths.
+	 *
+	 * @param string $stable_path
+	 * @return string
+	 */
+	private function get_string_name( $stable_path ) {
+		if ( ! is_string( $stable_path ) || '' === $stable_path ) {
+			return '';
+		}
+
+		if ( strlen( $stable_path ) <= self::STRING_NAME_MAX_LENGTH ) {
+			return $stable_path;
+		}
+
+		$hash = substr( sha1( $stable_path ), 0, self::STRING_NAME_HASH_LENGTH );
+		$prefix_length = self::STRING_NAME_MAX_LENGTH - self::STRING_NAME_HASH_LENGTH - 1;
+		if ( $prefix_length < 1 ) {
+			return '#' . $hash;
+		}
+
+		return substr( $stable_path, 0, $prefix_length ) . '#' . $hash;
+	}
+
+	/**
+	 * Get the translation name using the stable path or raw path fallback.
+	 *
+	 * @param string $stable_path
+	 * @param string $raw_path
+	 * @return string
+	 */
+	private function get_translation_name( $stable_path, $raw_path ) {
+		$name = $this->get_string_name( $stable_path );
+		if ( '' === $name && is_string( $raw_path ) && '' !== $raw_path ) {
+			$name = $this->get_string_name( $raw_path );
+		}
+
+		return $name;
 	}
 
 	/**
@@ -1240,22 +1378,28 @@ class H5p_Wpml_Translator_Public {
 	 *
 	 * @param string $value
 	 * @param string $context
-	 * @param string $name
+	 * @param string $raw_path
+	 * @param string $stable_path
 	 * @param bool   $allow_html
 	 * @return string
 	 */
-	private function register_and_translate( $value, $context, $name, $allow_html ) {
-		$this->mark_translated_path( $name );
+	private function register_and_translate( $value, $context, $raw_path, $stable_path, $allow_html ) {
+		$string_name = $this->get_translation_name( $stable_path, $raw_path );
+		if ( '' === $string_name ) {
+			return $value;
+		}
+
+		$this->mark_translated_path( $string_name );
 
 		// Normalize string before registration/translation.
 		// Use html_entity_decode to handle &nbsp; and other entities from H5P.
 		$normalized = trim( html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
 		
 		if ( $this->should_register_strings() ) {
-			$this->register_string( $context, $name, $normalized, $allow_html );
+			$this->register_string( $context, $string_name, $normalized, $allow_html );
 		}
 		
-		$translated = $this->translate_string( $normalized, $context, $name );
+		$translated = $this->translate_string( $normalized, $context, $string_name );
 		$language   = $this->get_current_language();
 
 		H5p_Wpml_Translator_Logger::log( array(
@@ -1263,7 +1407,9 @@ class H5p_Wpml_Translator_Public {
 			'status'     => ( $translated !== $normalized ) ? 'FOUND' : 'NOT FOUND (Source returned)',
 			'lang'       => $language ?: 'Default',
 			'context'    => $context,
-			'path'       => $name,
+			'path'       => $string_name,
+			'raw_path'   => $raw_path,
+			'stable_path' => $stable_path,
 			'source'     => $value,
 			'normalized' => $normalized,
 			'translated' => $translated,
